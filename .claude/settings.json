@@ -1,0 +1,20 @@
+{
+  "outputStyle": "dev",
+  "permissionMode": "bypassPermissions",
+  "enableMultiAgentTeams": true,
+  "testFramework": "playwright",
+  "projectType": "web3",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/auto-format.sh"
+          }
+        ]
+      }
+    ]
+  }
+}

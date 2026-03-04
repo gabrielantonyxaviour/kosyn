@@ -1,0 +1,5 @@
+{
+  "receiverAddress": "0x28a15D8daDaBE287F0368e47114Aa80Aa319C31A",
+  "gasLimit": 400000,
+  "pinataGateway": "https://gateway.pinata.cloud"
+}

@@ -1,0 +1,10 @@
+name: patient-ai-attest
+secrets-path: "../secrets.yaml"
+
+staging-settings:
+  user-workflow:
+    workflow-name: "kosyn-patient-ai-attest-staging"
+  workflow-artifacts:
+    workflow-path: "./main.ts"
+    config-path: "./config.staging.json"
+    secrets-path: "../secrets.yaml"

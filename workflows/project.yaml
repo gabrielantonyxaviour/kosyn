@@ -1,0 +1,29 @@
+version: "1.0"
+name: "kosyn-ai"
+
+staging-settings:
+  rpcs:
+    - chain-name: avalanche-testnet-fuji
+      url: https://api.avax-test.network/ext/bc/C/rpc
+    - chain-name: ethereum-testnet-sepolia
+      url: https://ethereum-sepolia-rpc.publicnode.com
+    - chain-name: ethereum-mainnet
+      url: https://ethereum-rpc.publicnode.com
+
+workflows:
+  - name: record-upload
+    path: ./record-upload
+  - name: consultation-processing
+    path: ./consultation-processing
+  - name: provider-decryption
+    path: ./provider-decryption
+  - name: payment-mint
+    path: ./payment-mint
+  - name: provider-registration
+    path: ./provider-registration
+  - name: data-marketplace
+    path: ./data-marketplace
+  - name: patient-ai-attest
+    path: ./patient-ai-attest
+  - name: data-aggregation
+    path: ./data-aggregation

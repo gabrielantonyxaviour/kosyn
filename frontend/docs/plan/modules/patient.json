@@ -1,0 +1,1154 @@
+{
+  "id": "patient",
+  "name": "Patient Portal",
+  "description": "Patient dashboard, health records, data marketplace, and consultation booking",
+  "color": "#3b82f6",
+  "icon": "Heart",
+  "screens": [
+    {
+      "id": "patient.dashboard",
+      "name": "Patient Dashboard",
+      "route": "/patients/dashboard",
+      "status": "implemented",
+      "description": "Main patient view with health stats, upcoming consultations, and access log",
+      "ui": {
+        "layout": "full-width",
+        "sections": [
+          {
+            "type": "stats-grid",
+            "columns": 4,
+            "items": [
+              {
+                "label": "Health Score",
+                "value": "82",
+                "icon": "Heart",
+                "color": "red-400"
+              },
+              {
+                "label": "Records",
+                "value": "4",
+                "icon": "Activity",
+                "color": "blue-400"
+              },
+              {
+                "label": "Active Consents",
+                "value": "2",
+                "icon": "ShieldCheck",
+                "color": "emerald-400"
+              },
+              {
+                "label": "Marketplace Earnings",
+                "value": "$12.50 KUSD",
+                "icon": "DollarSign",
+                "color": "emerald-400"
+              }
+            ]
+          },
+          {
+            "type": "card-list",
+            "id": "consultations",
+            "title": "Upcoming Consultations",
+            "component": "ConsultationList",
+            "description": "3 mock consultations with doctor name, specialty, date, status badge. Each row links to /consultation/{id}"
+          },
+          {
+            "type": "card-list",
+            "id": "access-log",
+            "title": "Recent Access",
+            "component": "AccessLog",
+            "description": "3 mock access log entries showing accessor, action, timestamp, wallet address, CRE Verified badge"
+          }
+        ],
+        "actions": [
+          {
+            "label": "Kosyn",
+            "action": "navigate",
+            "target": "/",
+            "description": "App logo with Shield icon — navigates to home page"
+          },
+          {
+            "label": "Dashboard",
+            "action": "navigate",
+            "target": "/patients/dashboard",
+            "description": "Nav link — currently active page"
+          },
+          {
+            "label": "Records",
+            "action": "navigate",
+            "target": "/patients/records",
+            "description": "Nav link to health records page"
+          },
+          {
+            "label": "Book",
+            "action": "navigate",
+            "target": "/patients/book",
+            "description": "Nav link to booking wizard"
+          },
+          {
+            "label": "Sign In",
+            "action": "dialog",
+            "target": "wallet-connect",
+            "description": "Opens Thirdweb Connect modal — email/social login for patients"
+          },
+          {
+            "label": "0.00",
+            "action": "api-call",
+            "endpoint": "KosynUSD.balanceOf(address)",
+            "description": "KUSD balance from KosynUSD contract, formatted as balance / 1e18"
+          },
+          {
+            "label": "KUSD",
+            "action": "label",
+            "description": "Token label — part of KUSD balance display in nav header"
+          },
+          {
+            "label": "Deposit",
+            "action": "dialog",
+            "target": "deposit-modal",
+            "description": "Opens deposit modal for KUSD purchase"
+          },
+          {
+            "label": "Sepolia",
+            "action": "api-call",
+            "endpoint": "useActiveWalletChain().id",
+            "description": "Network indicator — reads chain ID from wallet, mapped via CHAIN_META"
+          },
+          {
+            "label": "0x7458...5B78",
+            "action": "dialog",
+            "target": "wallet-details",
+            "description": "Opens wallet details panel — view address, switch networks, disconnect"
+          },
+          {
+            "label": "Book Consultation",
+            "icon": "CalendarPlus",
+            "action": "navigate",
+            "target": "/patients/book",
+            "description": "CTA button in action row — navigates to booking wizard"
+          },
+          {
+            "label": "Dr. Sarah Chen",
+            "action": "navigate",
+            "target": "/patients/consultation/1",
+            "description": "Consultation row link — opens consultation detail"
+          },
+          {
+            "label": "Dr. James Wilson",
+            "action": "navigate",
+            "target": "/patients/consultation/2",
+            "description": "Consultation row link — opens consultation detail"
+          },
+          {
+            "label": "Dr. Aisha Patel",
+            "action": "navigate",
+            "target": "/patients/consultation/3",
+            "description": "Consultation row link — opens consultation detail"
+          }
+        ]
+      },
+      "states": [
+        {
+          "id": "connected-with-data",
+          "name": "Connected (With Data)",
+          "description": "Wallet connected with health records and activity — full dashboard with stats, consultations, and access log",
+          "isInitial": true,
+          "mutations": [],
+          "elementDescriptions": {
+            "Kosyn": "App logo/brand name in nav header — Shield icon + text, links to /",
+            "Dashboard": "Nav header link — currently active page, styled as text-foreground font-medium",
+            "Records": "Nav header link — navigates to /patients/records",
+            "Book": "Nav header link — navigates to /patients/book",
+            "Sign In": "Thirdweb ConnectButton label — opens wallet connect modal with email/social options for patients",
+            "0.00": "KUSD balance in nav header — KosynUSD.balanceOf(address) / 1e18, displayed with CircleDollarSign icon",
+            "KUSD": "Token label in nav header — part of KusdBadge component, muted foreground text",
+            "Deposit": "Deposit button in nav header — dashed emerald border, Plus icon, opens DepositModal",
+            "Sepolia": "Network badge in nav header — blue dot + chain name from useActiveWalletChain(), mapped via CHAIN_META",
+            "0x7458...5B78": "Wallet address button in nav header — Thirdweb detailsButton, opens wallet details panel",
+            "82": "Health Score stat value — from HealthRecordRegistry.getHealthScore(address), red-400 Heart icon",
+            "Health Score": "Stat label — first cell in divide-x stats bar, paired with Heart icon",
+            "4": "Records stat value — from HealthRecordRegistry.getRecordCount(address), blue-400 Activity icon",
+            "Records (stat)": "Stat label — second cell in divide-x stats bar, paired with Activity icon",
+            "2": "Active Consents stat value — from PatientConsent.getActiveConsents(address), emerald-400 ShieldCheck icon",
+            "Active Consents": "Stat label — third cell in divide-x stats bar, paired with ShieldCheck icon",
+            "$12.50": "Marketplace Earnings value — from DataMarketplace.getEarnings(address), emerald-400 CircleDollarSign icon",
+            "KUSD (badge)": "Badge next to $12.50 — outline badge with emerald styling, indicates KosynUSD denomination",
+            "Earnings": "Stat label — fourth cell in divide-x stats bar, below $12.50 KUSD value",
+            "Book Consultation": "CTA button — CalendarPlus icon + text, right-aligned in action row, links to /patients/book",
+            "Consultations": "Section heading — text-sm font-medium text-muted-foreground, above consultations table",
+            "Doctor": "Table column header in ConsultationList — doctor name column",
+            "Specialty": "Table column header in ConsultationList — specialty column",
+            "Date": "Table column header in ConsultationList — formatted as 'MMM d, yyyy' via date-fns",
+            "Time": "Table column header in ConsultationList — formatted as 'h:mm a' via date-fns",
+            "Status": "Table column header in ConsultationList — right-aligned, shows status badge",
+            "Dr. Sarah Chen": "Consultation row — Internal Medicine, Feb 27 2026 10:00 AM, status: upcoming. Links to /patients/consultation/1",
+            "Dr. James Wilson": "Consultation row — Cardiology, Feb 22 2026 2:30 PM, status: completed. Links to /patients/consultation/2",
+            "Dr. Aisha Patel": "Consultation row — Dermatology, Feb 18 2026 9:00 AM, status: completed. Links to /patients/consultation/3",
+            "Internal Medicine": "Specialty cell for Dr. Sarah Chen — muted foreground text",
+            "Cardiology": "Specialty cell for Dr. James Wilson — muted foreground text",
+            "Dermatology": "Specialty cell for Dr. Aisha Patel — muted foreground text",
+            "Feb 27, 2026": "Date cell for Dr. Sarah Chen consultation — formatted via format(date, 'MMM d, yyyy')",
+            "Feb 22, 2026": "Date cell for Dr. James Wilson consultation — formatted via format(date, 'MMM d, yyyy')",
+            "Feb 18, 2026": "Date cell for Dr. Aisha Patel consultation — formatted via format(date, 'MMM d, yyyy')",
+            "10:00 AM": "Time cell for Dr. Sarah Chen consultation — formatted via format(date, 'h:mm a')",
+            "2:30 PM": "Time cell for Dr. James Wilson consultation — formatted via format(date, 'h:mm a')",
+            "9:00 AM": "Time cell for Dr. Aisha Patel consultation — formatted via format(date, 'h:mm a')",
+            "upcoming": "Status badge — blue styling (bg-blue-500/10 text-blue-400), consultation is in the future",
+            "completed": "Status badge — green styling (bg-green-500/10 text-green-400), consultation has ended",
+            "Access History": "Section heading — text-sm font-medium text-muted-foreground, above access log table",
+            "Accessor": "Table column header in AccessLog — accessor name column",
+            "Action": "Table column header in AccessLog — action description column",
+            "Time (access)": "Table column header in AccessLog — formatted as 'MMM d, h:mm a' via date-fns",
+            "Address": "Table column header in AccessLog — truncated wallet address in monospace",
+            "Verified": "Table column header in AccessLog — right-aligned, shows CRE badge",
+            "Dr. Sarah Chen (access)": "Access log row — 'Viewed health records', Feb 28 10:00 AM, 0x9abc...def0, CRE verified",
+            "Dr. James Wilson (access)": "Access log row — 'Generated consultation report', Feb 27 2:30 PM, 0x5678...9abc, CRE verified",
+            "CRE Workflow": "Access log row — 'Record encrypted and stored', Feb 26 9:15 AM, 0xdef0...1234, CRE verified",
+            "Viewed health records": "Action cell — from HealthRecordRegistry.AccessGranted event action field. Demo: mockLogs array",
+            "Generated consultation report": "Action cell — from HealthRecordRegistry.AccessGranted event action field. Demo: mockLogs array",
+            "Record encrypted and stored": "Action cell — CRE workflow completion event. Demo: mockLogs array",
+            "0x9abc...def0": "Accessor wallet address — monospace code element, from AccessGranted event accessor field",
+            "0x5678...9abc": "Accessor wallet address — monospace code element, from AccessGranted event accessor field",
+            "0xdef0...1234": "Accessor wallet address — monospace code element, from CRE workflow event",
+            "CRE": "Verified badge — emerald outline badge with ShieldCheck icon, confirms action ran inside CRE TEE enclave"
+          }
+        }
+      ],
+      "appFlows": [
+        {
+          "id": "dashboard-to-book",
+          "name": "Navigate to booking",
+          "steps": [
+            {
+              "order": 1,
+              "layer": "ui",
+              "description": "User clicks 'Book Consultation' button"
+            },
+            {
+              "order": 2,
+              "layer": "navigation",
+              "description": "Next.js Link navigates to /patients/book"
+            }
+          ]
+        },
+        {
+          "id": "dashboard-to-consultation",
+          "name": "Open consultation",
+          "steps": [
+            {
+              "order": 1,
+              "layer": "ui",
+              "description": "User clicks consultation row in ConsultationList"
+            },
+            {
+              "order": 2,
+              "layer": "navigation",
+              "description": "Next.js Link navigates to /patients/consultation/{id}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "patient.records",
+      "name": "My Records",
+      "route": "/patients/records",
+      "status": "implemented",
+      "description": "Encrypted health record browser with upload, passkey decryption, filter, and data marketplace opt-in",
+      "ui": {
+        "layout": "full-width",
+        "sections": [
+          {
+            "type": "filter-bar",
+            "filters": [
+              "All",
+              "Health",
+              "Consultation",
+              "Certificate",
+              "Prescription"
+            ]
+          },
+          {
+            "type": "card-grid",
+            "id": "records-grid",
+            "columns": 2,
+            "component": "RecordsList",
+            "description": "Record cards showing type icon/badge, upload date, 'Encrypted (AES-256-GCM)' label, PasskeyDecrypt button. Data from useMockRecords() hook."
+          },
+          {
+            "type": "card",
+            "id": "data-marketplace",
+            "title": "Data Marketplace",
+            "component": "DataMarketplace",
+            "description": "Opt-in switch, data category badges (Vitals, Medications, Lab Results, Diagnoses), earnings display in KUSD"
+          }
+        ],
+        "actions": [
+          {
+            "label": "Kosyn",
+            "action": "navigate",
+            "target": "/",
+            "description": "App logo with Shield icon — navigates to home page"
+          },
+          {
+            "label": "Dashboard",
+            "action": "navigate",
+            "target": "/patients/dashboard",
+            "description": "Nav link to patient dashboard"
+          },
+          {
+            "label": "Records",
+            "action": "navigate",
+            "target": "/patients/records",
+            "description": "Nav link — currently active page"
+          },
+          {
+            "label": "Book",
+            "action": "navigate",
+            "target": "/patients/book",
+            "description": "Nav link to booking wizard"
+          },
+          {
+            "label": "Sign In",
+            "action": "dialog",
+            "target": "wallet-connect",
+            "description": "Opens Thirdweb Connect modal — email/social login for patients"
+          },
+          {
+            "label": "0.00",
+            "action": "api-call",
+            "endpoint": "KosynUSD.balanceOf(address)",
+            "description": "KUSD balance from KosynUSD contract, formatted as balance / 1e18"
+          },
+          {
+            "label": "KUSD",
+            "action": "label",
+            "description": "Token label — part of KUSD balance display in nav header"
+          },
+          {
+            "label": "Deposit",
+            "action": "dialog",
+            "target": "deposit-modal",
+            "description": "Opens deposit modal for KUSD purchase"
+          },
+          {
+            "label": "Sepolia",
+            "action": "api-call",
+            "endpoint": "useActiveWalletChain().id",
+            "description": "Network indicator — reads chain ID from wallet, mapped via CHAIN_META"
+          },
+          {
+            "label": "0x7458...5B78",
+            "action": "dialog",
+            "target": "wallet-details",
+            "description": "Opens wallet details panel — view address, switch networks, disconnect"
+          },
+          {
+            "label": "Create Record",
+            "icon": "Plus",
+            "action": "navigate",
+            "target": "/patients/records/new",
+            "description": "Button below subtitle — navigates to the new record creation page"
+          },
+          {
+            "label": "Upload Record",
+            "icon": "Upload",
+            "action": "api-call",
+            "endpoint": "triggerWorkflow('record-upload')",
+            "description": "Button in filter bar — triggers CRE TEE workflow to encrypt and store on IPFS"
+          },
+          {
+            "label": "All",
+            "action": "toggle",
+            "description": "Filter tab — shows all record types. Sets activeFilter to 'all'"
+          },
+          {
+            "label": "Health",
+            "action": "toggle",
+            "description": "Filter tab — filters records to health type only"
+          },
+          {
+            "label": "Consultation",
+            "action": "toggle",
+            "description": "Filter tab — filters records to consultation type only"
+          },
+          {
+            "label": "Certificate",
+            "action": "toggle",
+            "description": "Filter tab — filters records to certificate type only"
+          },
+          {
+            "label": "Prescription",
+            "action": "toggle",
+            "description": "Filter tab — filters records to prescription type only"
+          },
+          {
+            "label": "Decrypt",
+            "action": "api-call",
+            "endpoint": "navigator.credentials.get()",
+            "description": "PasskeyDecrypt button — triggers WebAuthn fingerprint/face verification to decrypt"
+          },
+          {
+            "label": "Decrypted",
+            "action": "toggle",
+            "description": "Post-decrypt state — record visible in plaintext, button disabled with emerald styling"
+          },
+          {
+            "label": "Data Marketplace toggle",
+            "action": "toggle",
+            "description": "Switch component — opts in/out of selling anonymized health data for KUSD"
+          },
+          {
+            "label": "Vitals & Metrics",
+            "action": "toggle",
+            "description": "Data category badge — toggle selection for marketplace sharing"
+          },
+          {
+            "label": "Medications",
+            "action": "toggle",
+            "description": "Data category badge — toggle selection for marketplace sharing"
+          },
+          {
+            "label": "Lab Results",
+            "action": "toggle",
+            "description": "Data category badge — toggle selection for marketplace sharing"
+          },
+          {
+            "label": "Diagnoses",
+            "action": "toggle",
+            "description": "Data category badge — toggle selection for marketplace sharing"
+          }
+        ]
+      },
+      "states": [
+        {
+          "id": "connected",
+          "name": "Connected",
+          "description": "Wallet connected — records visible with filter bar, upload button, and marketplace",
+          "isInitial": true,
+          "mutations": [],
+          "elementDescriptions": {
+            "Kosyn": "App logo/brand name in nav header — Shield icon + text, links to /",
+            "Dashboard": "Nav header link — navigates to /patients/dashboard",
+            "Records": "Nav header link — currently active page, styled as text-foreground font-medium",
+            "Book": "Nav header link — navigates to /patients/book",
+            "Sign In": "Thirdweb ConnectButton label — opens wallet connect modal with email/social options",
+            "0.00": "KUSD balance in nav header — KosynUSD.balanceOf(address) / 1e18, CircleDollarSign icon",
+            "KUSD": "Token label in nav header — part of KusdBadge component, muted foreground text",
+            "Deposit": "Deposit button in nav header — dashed emerald border, Plus icon, opens DepositModal",
+            "Sepolia": "Network badge in nav header — blue dot + chain name from useActiveWalletChain()",
+            "0x7458...5B78": "Wallet address button in nav header — Thirdweb detailsButton",
+            "My Records": "Page title — centered, text-2xl font-bold",
+            "All records are encrypted with AES-256-GCM inside CRE TEE enclaves. Only you can decrypt them.": "Subtitle — centered text-sm text-muted-foreground, explains encryption guarantee",
+            "Create Record": "Button below subtitle — Plus icon, navigates to /patients/records/new",
+            "All": "Filter tab — default active, shows all record types. Button variant toggles default/outline",
+            "Health": "Filter tab — filters records to health type. Label from typeConfig",
+            "Consultation": "Filter tab — filters records to consultation type",
+            "Certificate": "Filter tab — filters records to certificate type",
+            "Prescription": "Filter tab — filters records to prescription type",
+            "Upload Record": "Upload button right of filter bar — Upload icon, triggers triggerWorkflow('record-upload')",
+            "Record #1": "Record card — type icon in muted bg, Record #1 title, type badge, upload date, Lock icon + 'Encrypted (AES-256-GCM)', PasskeyDecrypt button",
+            "Record #2": "Record card — same layout as Record #1 with different type/date",
+            "Record #3": "Record card — same layout as Record #1 with different type/date",
+            "Record #4": "Record card — same layout as Record #1 with different type/date",
+            "Encrypted (AES-256-GCM)": "Encryption label on each record card — Lock icon + text, text-xs text-muted-foreground",
+            "Decrypt": "PasskeyDecrypt button on each record card — Fingerprint icon, triggers WebAuthn verification",
+            "Data Marketplace": "Card title — Database icon + text, with Switch toggle on the right for opt-in/out",
+            "Sell anonymized health data for KUSD. All data is fully de-identified inside TEE enclaves — companies only receive aggregated statistics.": "Marketplace description — text-xs text-muted-foreground under card title",
+            "Data categories to share": "Label above category badges — visible when marketplace is opted in",
+            "Vitals & Metrics": "Data category badge — toggleable, selects vitals data for marketplace sharing",
+            "Medications": "Data category badge — toggleable, selects medication data for marketplace sharing",
+            "Lab Results": "Data category badge — toggleable, selects lab result data for marketplace sharing",
+            "Diagnoses": "Data category badge — toggleable, selects diagnosis data for marketplace sharing",
+            "Earnings": "Label in earnings box — visible when marketplace is opted in",
+            "12.50": "KUSD earnings amount — DollarSign icon, text-2xl font-bold, from DataMarketplace.getEarnings(address)",
+            "KUSD (earnings)": "Token label next to earnings amount — text-sm text-muted-foreground",
+            "From 3 anonymized queries this month": "Earnings subtitle — text-xs text-muted-foreground, query count from DataMarketplace"
+          }
+        },
+        {
+          "id": "uploading",
+          "name": "Uploading Record",
+          "description": "Upload flow triggered — CRE TEE encrypting and storing record on IPFS",
+          "triggeredBy": ["Upload Record"],
+          "mutations": [
+            {
+              "textMatch": "Upload Record",
+              "op": {
+                "type": "setHtml",
+                "value": "<span class='flex items-center gap-2'><svg class='animate-spin h-4 w-4' xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24'><circle class='opacity-25' cx='12' cy='12' r='10' stroke='currentColor' stroke-width='4'></circle><path class='opacity-75' fill='currentColor' d='M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'></path></svg>Uploading...</span>"
+              }
+            }
+          ],
+          "elementDescriptions": {
+            "Uploading...": "Upload button in loading state — spinner + text, CRE TEE is encrypting record and uploading to IPFS"
+          }
+        },
+        {
+          "id": "record-decrypted",
+          "name": "Record Decrypted",
+          "description": "A record has been decrypted via WebAuthn passkey — shows decrypted content",
+          "triggeredBy": ["Decrypt"],
+          "mutations": [
+            {
+              "textMatch": "Decrypt",
+              "op": {
+                "type": "setHtml",
+                "value": "<span class='flex items-center gap-1.5 text-emerald-400'><svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect width='18' height='11' x='3' y='11' rx='2' ry='2'/><path d='M7 11V7a5 5 0 0 1 9.9-1'/></svg>Decrypted</span>"
+              }
+            },
+            {
+              "textMatch": "Encrypted (AES-256-GCM)",
+              "op": {
+                "type": "setText",
+                "value": "Decrypted — Viewing plaintext"
+              }
+            }
+          ],
+          "elementDescriptions": {
+            "Decrypted": "PasskeyDecrypt button in verified state — LockOpen icon, emerald-400 text, disabled button",
+            "Decrypted — Viewing plaintext": "Status label replacing 'Encrypted (AES-256-GCM)' — record content now visible"
+          }
+        }
+      ],
+      "appFlows": [
+        {
+          "id": "upload-record",
+          "name": "Upload health record",
+          "steps": [
+            {
+              "order": 1,
+              "layer": "ui",
+              "description": "User clicks 'Upload Record' button"
+            },
+            {
+              "order": 2,
+              "layer": "api",
+              "description": "triggerWorkflow('record-upload', { patientData }) via POST /api/cre/record-upload"
+            },
+            {
+              "order": 3,
+              "layer": "external",
+              "description": "CRE TEE encrypts data, uploads to IPFS, writes hash on-chain"
+            },
+            {
+              "order": 4,
+              "layer": "ui",
+              "description": "Success toast, new record card appears in grid"
+            }
+          ]
+        },
+        {
+          "id": "decrypt-record",
+          "name": "Decrypt record with passkey",
+          "steps": [
+            {
+              "order": 1,
+              "layer": "ui",
+              "description": "User clicks PasskeyDecrypt button on record card"
+            },
+            {
+              "order": 2,
+              "layer": "auth",
+              "description": "WebAuthn navigator.credentials.get() prompts fingerprint/face"
+            },
+            {
+              "order": 3,
+              "layer": "ui",
+              "description": "Button changes to 'Decrypted' (green lock-open icon)"
+            }
+          ]
+        },
+        {
+          "id": "marketplace-opt-in",
+          "name": "Toggle data marketplace",
+          "steps": [
+            {
+              "order": 1,
+              "layer": "ui",
+              "description": "User toggles marketplace Switch to on"
+            },
+            {
+              "order": 2,
+              "layer": "ui",
+              "description": "Category badges appear, user selects data types"
+            },
+            {
+              "order": 3,
+              "layer": "ui",
+              "description": "Earnings display shows KUSD amount (mock: 12.50)"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "patient.records-new",
+      "name": "Create Health Record",
+      "route": "/patients/records/new",
+      "status": "implemented",
+      "description": "Template picker for creating new health records — select type, fill form, encrypt and upload via CRE TEE",
+      "ui": {
+        "layout": "full-width",
+        "sections": [
+          {
+            "type": "header",
+            "id": "page-header",
+            "description": "ArrowLeft back button + title 'Create Health Record' + subtitle about TEE encryption"
+          },
+          {
+            "type": "card-grid",
+            "id": "template-picker",
+            "columns": 3,
+            "description": "5 template cards: Vitals (Heart icon), Medical History (FileText icon), Medications (Pill icon), Lab Results (Activity icon), Upload PDF (Upload icon). Click to select and show corresponding form."
+          },
+          {
+            "type": "form",
+            "id": "record-form",
+            "description": "Dynamic form based on selected template. Each form has specific fields and an 'Encrypt & Upload via CRE' submit button."
+          },
+          {
+            "type": "sidebar",
+            "id": "cre-feed",
+            "component": "CreFeed",
+            "description": "CRE Workflow sidebar — shows step-by-step progress of the record-upload workflow with status icons (pending/processing/done/error)"
+          }
+        ],
+        "actions": [
+          {
+            "label": "Kosyn",
+            "action": "navigate",
+            "target": "/",
+            "description": "App logo with Shield icon — navigates to home page"
+          },
+          {
+            "label": "Dashboard",
+            "action": "navigate",
+            "target": "/patients/dashboard",
+            "description": "Nav link to patient dashboard"
+          },
+          {
+            "label": "Records",
+            "action": "navigate",
+            "target": "/patients/records",
+            "description": "Nav link to health records page"
+          },
+          {
+            "label": "Book",
+            "action": "navigate",
+            "target": "/patients/book",
+            "description": "Nav link to booking wizard"
+          },
+          {
+            "label": "Sign In",
+            "action": "dialog",
+            "target": "wallet-connect",
+            "description": "Opens Thirdweb Connect modal — email/social login for patients"
+          },
+          {
+            "label": "0.00",
+            "action": "api-call",
+            "endpoint": "KosynUSD.balanceOf(address)",
+            "description": "KUSD balance from KosynUSD contract, formatted as balance / 1e18"
+          },
+          {
+            "label": "KUSD",
+            "action": "label",
+            "description": "Token label — part of KUSD balance display in nav header"
+          },
+          {
+            "label": "Deposit",
+            "action": "dialog",
+            "target": "deposit-modal",
+            "description": "Opens deposit modal for KUSD purchase"
+          },
+          {
+            "label": "Sepolia",
+            "action": "api-call",
+            "endpoint": "useActiveWalletChain().id",
+            "description": "Network indicator — reads chain ID from wallet, mapped via CHAIN_META"
+          },
+          {
+            "label": "0x7458...5B78",
+            "action": "dialog",
+            "target": "wallet-details",
+            "description": "Opens wallet details panel — view address, switch networks, disconnect"
+          },
+          {
+            "label": "Back (ArrowLeft)",
+            "icon": "ArrowLeft",
+            "action": "navigate",
+            "target": "/patients/records",
+            "description": "Ghost icon button — navigates back to records list"
+          },
+          {
+            "label": "Vitals",
+            "action": "toggle",
+            "description": "Template card — Heart icon, selects vitals form (blood pressure, heart rate, weight, temperature)"
+          },
+          {
+            "label": "Medical History",
+            "action": "toggle",
+            "description": "Template card — FileText icon, selects medical history form (conditions, surgeries, family history, allergies)"
+          },
+          {
+            "label": "Medications",
+            "action": "toggle",
+            "description": "Template card — Pill icon, selects medications form (medications, dosages, schedule, prescribed by)"
+          },
+          {
+            "label": "Lab Results",
+            "action": "toggle",
+            "description": "Template card — Activity icon, selects lab results form (test name, date, results, reference range, lab)"
+          },
+          {
+            "label": "Upload PDF",
+            "action": "toggle",
+            "description": "Template card — Upload icon, selects PDF upload form (document label, file picker)"
+          },
+          {
+            "label": "Change template",
+            "action": "toggle",
+            "description": "Ghost button in form card header — resets selected template back to picker view"
+          },
+          {
+            "label": "Encrypt & Upload via CRE",
+            "action": "api-call",
+            "endpoint": "triggerWorkflow('record-upload')",
+            "description": "Form submit button — triggers CRE TEE encryption and IPFS upload"
+          }
+        ]
+      },
+      "states": [
+        {
+          "id": "template-picker",
+          "name": "Template Picker",
+          "description": "Initial view — 5 template cards displayed, no form visible, CRE feed sidebar idle",
+          "isInitial": true,
+          "mutations": [],
+          "elementDescriptions": {
+            "Kosyn": "App logo/brand name in nav header — Shield icon + text, links to /",
+            "Dashboard": "Nav header link — navigates to /patients/dashboard",
+            "Records": "Nav header link — navigates to /patients/records, styled as active since records-new is a sub-route",
+            "Book": "Nav header link — navigates to /patients/book",
+            "Sign In": "Thirdweb ConnectButton label — opens wallet connect modal",
+            "0.00": "KUSD balance in nav header — KosynUSD.balanceOf(address) / 1e18",
+            "KUSD": "Token label in nav header — part of KusdBadge component",
+            "Deposit": "Deposit button in nav header — opens DepositModal",
+            "Sepolia": "Network badge in nav header — chain name from useActiveWalletChain()",
+            "0x7458...5B78": "Wallet address button in nav header — opens wallet details",
+            "Create Health Record": "Page title — text-2xl font-bold, next to ArrowLeft back button",
+            "Choose a template or upload a PDF. All data is encrypted inside a TEE enclave.": "Subtitle — text-sm text-muted-foreground, explains TEE encryption",
+            "Vitals": "Template card label — Heart icon, description: 'Blood pressure, heart rate, weight, temperature'",
+            "Blood pressure, heart rate, weight, temperature": "Template card description — text-xs text-muted-foreground under Vitals label",
+            "Medical History": "Template card label — FileText icon, description: 'Conditions, surgeries, family history'",
+            "Conditions, surgeries, family history": "Template card description — text-xs text-muted-foreground under Medical History label",
+            "Medications": "Template card label — Pill icon, description: 'Current prescriptions, dosages, schedules'",
+            "Current prescriptions, dosages, schedules": "Template card description — text-xs text-muted-foreground under Medications label",
+            "Lab Results": "Template card label — Activity icon, description: 'Blood work, imaging, diagnostic tests'",
+            "Blood work, imaging, diagnostic tests": "Template card description — text-xs text-muted-foreground under Lab Results label",
+            "Upload PDF": "Template card label — Upload icon, description: 'Upload an existing medical document'",
+            "Upload an existing medical document": "Template card description — text-xs text-muted-foreground under Upload PDF label",
+            "CRE Workflow": "Sidebar card title — Cpu icon + text, shows record-upload workflow steps",
+            "Encrypt with AES-256-GCM": "CRE workflow step — pending status (Clock icon), first step in record-upload pipeline",
+            "Upload to IPFS via Pinata": "CRE workflow step — pending status, second step in pipeline",
+            "Register hash on-chain": "CRE workflow step — pending status, third step in pipeline"
+          }
+        },
+        {
+          "id": "form-active",
+          "name": "Form Active",
+          "description": "Template selected — form visible with fields, CRE feed sidebar idle",
+          "triggeredBy": [
+            "Vitals",
+            "Medical History",
+            "Medications",
+            "Lab Results",
+            "Upload PDF"
+          ],
+          "mutations": [],
+          "elementDescriptions": {
+            "Change template": "Ghost button in form card header — resets to template picker view",
+            "Encrypt & Upload via CRE": "Submit button at bottom of form — triggers triggerWorkflow('record-upload') with form data",
+            "Blood Pressure (mmHg)": "Input field label (vitals form) — placeholder '120/80'",
+            "Heart Rate (bpm)": "Input field label (vitals form) — placeholder '72'",
+            "Weight (kg)": "Input field label (vitals form) — placeholder '75'",
+            "Temperature (C)": "Input field label (vitals form) — placeholder '36.6'",
+            "Notes": "Textarea label — present in all form templates, placeholder varies by template"
+          }
+        },
+        {
+          "id": "cre-processing",
+          "name": "CRE Processing",
+          "description": "Form submitted — CRE workflow steps progressing in sidebar, toast notification shown",
+          "triggeredBy": ["Encrypt & Upload via CRE"],
+          "mutations": [],
+          "elementDescriptions": {
+            "Encrypting record inside CRE TEE enclave...": "Toast notification — info level, shown via toast.info() on form submit",
+            "Record encrypted and stored on IPFS. Hash registered on-chain.": "Success toast — shown after 4s timeout via toast.success()"
+          }
+        }
+      ],
+      "appFlows": [
+        {
+          "id": "create-record",
+          "name": "Create health record via template",
+          "steps": [
+            {
+              "order": 1,
+              "layer": "ui",
+              "description": "User selects a template card (Vitals, Medical History, etc.)"
+            },
+            {
+              "order": 2,
+              "layer": "ui",
+              "description": "Form appears with template-specific fields, user fills in data"
+            },
+            {
+              "order": 3,
+              "layer": "ui",
+              "description": "User clicks 'Encrypt & Upload via CRE'"
+            },
+            {
+              "order": 4,
+              "layer": "api",
+              "description": "triggerWorkflow('record-upload', { type, ...formData }) — CRE TEE encrypts"
+            },
+            {
+              "order": 5,
+              "layer": "ui",
+              "description": "CreFeed sidebar shows step-by-step progress (encrypt → IPFS → on-chain)"
+            },
+            {
+              "order": 6,
+              "layer": "ui",
+              "description": "Success toast after 4s: 'Record encrypted and stored on IPFS. Hash registered on-chain.'"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "patient.book",
+      "name": "Book Consultation",
+      "route": "/patients/book",
+      "status": "implemented",
+      "description": "3-step wizard: select doctor, pick time, pay (KUSD or Stripe)",
+      "ui": {
+        "layout": "full-width",
+        "sections": [
+          {
+            "type": "wizard",
+            "steps": [
+              {
+                "label": "Select Doctor",
+                "component": "DoctorPicker",
+                "description": "2-column grid of 4 mock doctor cards (avatar, name, specialty badge, fee in KUSD). Click to select."
+              },
+              {
+                "label": "Select Time",
+                "component": "CalendarPicker",
+                "description": "shadcn Calendar (past dates disabled) + 2-column grid of 10 time slot buttons"
+              },
+              {
+                "label": "Payment",
+                "component": "PaymentForm",
+                "description": "KUSD/Card toggle. KUSD: mock balance check + 1.5s delay. Card: POST /api/stripe/checkout → redirect."
+              }
+            ]
+          }
+        ],
+        "dialogs": [
+          {
+            "id": "booking-confirmation",
+            "title": "Booking Confirmed",
+            "trigger": "payment completion",
+            "description": "Shows doctor name and instructions about access approval. 'Done' button closes."
+          }
+        ],
+        "actions": [
+          {
+            "label": "Kosyn",
+            "action": "navigate",
+            "target": "/",
+            "description": "App logo with Shield icon — navigates to home page"
+          },
+          {
+            "label": "Dashboard",
+            "action": "navigate",
+            "target": "/patients/dashboard",
+            "description": "Nav link to patient dashboard"
+          },
+          {
+            "label": "Records",
+            "action": "navigate",
+            "target": "/patients/records",
+            "description": "Nav link to health records page"
+          },
+          {
+            "label": "Book",
+            "action": "navigate",
+            "target": "/patients/book",
+            "description": "Nav link — currently active page"
+          },
+          {
+            "label": "Sign In",
+            "action": "dialog",
+            "target": "wallet-connect",
+            "description": "Opens Thirdweb Connect modal — email/social login for patients"
+          },
+          {
+            "label": "0.00",
+            "action": "api-call",
+            "endpoint": "KosynUSD.balanceOf(address)",
+            "description": "KUSD balance from KosynUSD contract, formatted as balance / 1e18"
+          },
+          {
+            "label": "KUSD",
+            "action": "label",
+            "description": "Token label — part of KUSD balance display in nav header"
+          },
+          {
+            "label": "Deposit",
+            "action": "dialog",
+            "target": "deposit-modal",
+            "description": "Opens deposit modal for KUSD purchase"
+          },
+          {
+            "label": "Sepolia",
+            "action": "api-call",
+            "endpoint": "useActiveWalletChain().id",
+            "description": "Network indicator — reads chain ID from wallet, mapped via CHAIN_META"
+          },
+          {
+            "label": "0x7458...5B78",
+            "action": "dialog",
+            "target": "wallet-details",
+            "description": "Opens wallet details panel — view address, switch networks, disconnect"
+          },
+          {
+            "label": "1. Select Doctor",
+            "action": "toggle",
+            "description": "Step badge — navigable, always clickable to return to step 1"
+          },
+          {
+            "label": "2. Select Time",
+            "action": "toggle",
+            "description": "Step badge — clickable only after doctor is selected"
+          },
+          {
+            "label": "3. Payment",
+            "action": "toggle",
+            "description": "Step badge — clickable only after time is selected"
+          },
+          {
+            "label": "Dr. Sarah Chen (card)",
+            "action": "toggle",
+            "description": "Doctor card — click to select, advances to step 2. Internal Medicine, 50 KUSD"
+          },
+          {
+            "label": "Dr. James Wilson (card)",
+            "action": "toggle",
+            "description": "Doctor card — click to select. Cardiology, 75 KUSD"
+          },
+          {
+            "label": "Dr. Aisha Patel (card)",
+            "action": "toggle",
+            "description": "Doctor card — click to select. Dermatology, 60 KUSD"
+          },
+          {
+            "label": "Dr. Michael Torres (card)",
+            "action": "toggle",
+            "description": "Doctor card — click to select. Neurology, 80 KUSD"
+          },
+          {
+            "label": "Time slots",
+            "action": "toggle",
+            "description": "10 time slot buttons in 2-col grid — 9:00 AM to 4:00 PM, click to select and advance to payment"
+          },
+          {
+            "label": "KUSD (payment)",
+            "action": "toggle",
+            "description": "Payment method toggle — Coins icon, shows balance/fee breakdown"
+          },
+          {
+            "label": "Card",
+            "action": "toggle",
+            "description": "Payment method toggle — CreditCard icon, triggers Stripe checkout redirect"
+          },
+          {
+            "label": "Pay",
+            "action": "api-call",
+            "endpoint": "KosynUSD.transfer() or /api/stripe/checkout",
+            "description": "Pay button — text shows amount and method (e.g. 'Pay 50 KUSD' or 'Pay 50 USD')"
+          },
+          {
+            "label": "Done",
+            "action": "dialog",
+            "target": "close-confirmation",
+            "description": "Button in confirmation dialog — closes the dialog"
+          }
+        ]
+      },
+      "states": [
+        {
+          "id": "step-doctor",
+          "name": "Step 1: Select Doctor",
+          "description": "Initial wizard state — doctor picker grid visible, step 1 badge active",
+          "isInitial": true,
+          "mutations": [],
+          "elementDescriptions": {
+            "Kosyn": "App logo/brand name in nav header — Shield icon + text, links to /",
+            "Dashboard": "Nav header link — navigates to /patients/dashboard",
+            "Records": "Nav header link — navigates to /patients/records",
+            "Book": "Nav header link — currently active page, styled as text-foreground font-medium",
+            "Sign In": "Thirdweb ConnectButton label — opens wallet connect modal",
+            "0.00": "KUSD balance in nav header — KosynUSD.balanceOf(address) / 1e18",
+            "KUSD": "Token label in nav header — part of KusdBadge component",
+            "Deposit": "Deposit button in nav header — opens DepositModal",
+            "Sepolia": "Network badge in nav header — chain name from useActiveWalletChain()",
+            "0x7458...5B78": "Wallet address button in nav header — opens wallet details",
+            "Book Consultation": "Page title — centered, text-2xl font-bold",
+            "Select a doctor, choose a time, and pay with KUSD or card.": "Subtitle — centered text-sm text-muted-foreground",
+            "1. Select Doctor": "Step badge — variant 'default' (active), shows current step",
+            "2. Select Time": "Step badge — variant 'outline' (inactive), becomes clickable after doctor selected",
+            "3. Payment": "Step badge — variant 'outline' (inactive), becomes clickable after time selected",
+            "Dr. Sarah Chen": "Doctor card — User avatar icon, name, 'Internal Medicine' specialty badge, '50 KUSD' fee. Address: 0x1111...1111",
+            "Dr. James Wilson": "Doctor card — User avatar icon, name, 'Cardiology' specialty badge, '75 KUSD' fee. Address: 0x2222...2222",
+            "Dr. Aisha Patel": "Doctor card — User avatar icon, name, 'Dermatology' specialty badge, '60 KUSD' fee. Address: 0x3333...3333",
+            "Dr. Michael Torres": "Doctor card — User avatar icon, name, 'Neurology' specialty badge, '80 KUSD' fee. Address: 0x4444...4444",
+            "Internal Medicine": "Specialty badge on Dr. Sarah Chen's card — outline variant",
+            "Cardiology": "Specialty badge on Dr. James Wilson's card — outline variant",
+            "Dermatology": "Specialty badge on Dr. Aisha Patel's card — outline variant",
+            "Neurology": "Specialty badge on Dr. Michael Torres's card — outline variant",
+            "50 KUSD": "Fee on Dr. Sarah Chen's card — DollarSign icon + text, text-xs text-muted-foreground",
+            "75 KUSD": "Fee on Dr. James Wilson's card — DollarSign icon + text",
+            "60 KUSD": "Fee on Dr. Aisha Patel's card — DollarSign icon + text",
+            "80 KUSD": "Fee on Dr. Michael Torres's card — DollarSign icon + text"
+          }
+        },
+        {
+          "id": "step-time",
+          "name": "Step 2: Select Time",
+          "description": "Doctor selected — calendar picker and time slots visible",
+          "triggeredBy": [
+            "Dr. Sarah Chen (card)",
+            "Dr. James Wilson (card)",
+            "Dr. Aisha Patel (card)",
+            "Dr. Michael Torres (card)"
+          ],
+          "mutations": [],
+          "elementDescriptions": {
+            "Booking with": "Context text — 'Booking with Dr. [Name] (Specialty)', text-sm text-muted-foreground",
+            "Select Date": "Card title — CardTitle text-sm, above shadcn Calendar component",
+            "Available Times": "Card title — appears after date is selected, above 2-col time slot grid",
+            "9:00 AM": "Time slot button — outline variant, click to select",
+            "9:30 AM": "Time slot button — outline variant",
+            "10:00 AM": "Time slot button — outline variant",
+            "10:30 AM": "Time slot button — outline variant",
+            "11:00 AM": "Time slot button — outline variant",
+            "2:00 PM": "Time slot button — outline variant",
+            "2:30 PM": "Time slot button — outline variant",
+            "3:00 PM": "Time slot button — outline variant",
+            "3:30 PM": "Time slot button — outline variant",
+            "4:00 PM": "Time slot button — outline variant"
+          }
+        },
+        {
+          "id": "step-payment",
+          "name": "Step 3: Payment",
+          "description": "Time selected — payment form visible with KUSD/Card toggle",
+          "triggeredBy": ["Time slots"],
+          "mutations": [],
+          "elementDescriptions": {
+            "Payment": "Card title — CardTitle text-sm, above payment method toggle",
+            "KUSD (payment btn)": "Payment method button — Coins icon, flex-1, variant toggles default/outline",
+            "Card": "Payment method button — CreditCard icon, flex-1, variant toggles default/outline",
+            "Balance": "Label in KUSD detail box — shows mock balance '150.00 KUSD'",
+            "150.00 KUSD": "Mock KUSD balance — from kusdBalance const in PaymentForm",
+            "Fee": "Label in KUSD detail box — shows consultation fee amount",
+            "Pay 50 KUSD": "Pay button — full width, shows amount and payment method. Disabled during processing"
+          }
+        },
+        {
+          "id": "booking-confirmed",
+          "name": "Booking Confirmed",
+          "description": "Payment completed — confirmation dialog open",
+          "triggeredBy": ["Pay"],
+          "mutations": [],
+          "elementDescriptions": {
+            "Booking Confirmed": "Dialog title — CheckCircle2 icon in emerald-400, text 'Booking Confirmed'",
+            "Your consultation with": "Dialog body — shows doctor name and booking instructions",
+            "You will receive a notification when the doctor requests access to your records. Approve with your passkey to begin the consultation.": "Dialog instruction text — text-muted-foreground, explains next steps",
+            "Done": "Dialog close button — full width, closes the confirmation dialog"
+          }
+        }
+      ],
+      "appFlows": [
+        {
+          "id": "book-with-kusd",
+          "name": "Book and pay with KUSD",
+          "steps": [
+            {
+              "order": 1,
+              "layer": "ui",
+              "description": "User selects doctor card in DoctorPicker"
+            },
+            {
+              "order": 2,
+              "layer": "ui",
+              "description": "User picks date and time slot in CalendarPicker"
+            },
+            {
+              "order": 3,
+              "layer": "ui",
+              "description": "User selects KUSD payment method, clicks Pay"
+            },
+            {
+              "order": 4,
+              "layer": "ui",
+              "description": "1.5s mock delay, onPaymentComplete('kusd') fires"
+            },
+            {
+              "order": 5,
+              "layer": "ui",
+              "description": "Confirmation dialog opens with booking details"
+            }
+          ]
+        },
+        {
+          "id": "book-with-stripe",
+          "name": "Book and pay with Stripe",
+          "steps": [
+            {
+              "order": 1,
+              "layer": "ui",
+              "description": "User selects doctor, picks time, selects Card payment"
+            },
+            {
+              "order": 2,
+              "layer": "api",
+              "description": "POST /api/stripe/checkout with { amount, doctorName }"
+            },
+            {
+              "order": 3,
+              "layer": "external",
+              "description": "Stripe creates checkout session, returns URL"
+            },
+            {
+              "order": 4,
+              "layer": "navigation",
+              "description": "window.location.href redirects to Stripe checkout"
+            },
+            {
+              "order": 5,
+              "layer": "navigation",
+              "description": "Stripe redirects back to /patients/book?payment=success"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "apiEndpoints": [],
+  "dbTables": []
+}

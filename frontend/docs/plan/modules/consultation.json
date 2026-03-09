@@ -1,0 +1,710 @@
+{
+  "id": "consultation",
+  "name": "Consultation",
+  "description": "Live consultation sessions with transcription, consent, and AI analysis",
+  "color": "#f59e0b",
+  "icon": "Radio",
+  "screens": [
+    {
+      "id": "consultation.patient",
+      "name": "Patient Consultation View",
+      "route": "/patients/consultation/[id]",
+      "status": "implemented",
+      "description": "3-phase consultation: decrypt (consent) -> session (live transcript) -> results (AI analysis)",
+      "ui": {
+        "layout": "3-column (2+1)",
+        "sections": [
+          {
+            "type": "phase",
+            "id": "decrypt",
+            "label": "Awaiting Approval",
+            "components": [
+              {
+                "name": "DecryptRequest",
+                "description": "Amber-bordered consent card. Shows doctor name, wallet address, requested record types. Approve triggers usePasskey().verify(), then 4s timeout advances to session phase."
+              },
+              {
+                "name": "CreFeed",
+                "description": "CRE workflow feed for provider-decryption, isActive during processing"
+              }
+            ]
+          },
+          {
+            "type": "phase",
+            "id": "session",
+            "label": "In Session",
+            "components": [
+              {
+                "name": "LiveTranscript",
+                "description": "Scrollable transcript with Start/Stop mic and Demo button. Uses AssemblyAI for real transcription. onTranscriptComplete advances to results."
+              }
+            ]
+          },
+          {
+            "type": "phase",
+            "id": "results",
+            "label": "Completed",
+            "components": [
+              {
+                "name": "AiResults",
+                "description": "Tabbed display: SOAP note, Summary + risk scores, ICD-10/CPT codes, Drug interactions with severity badges"
+              }
+            ]
+          }
+        ],
+        "actions": [
+          {
+            "label": "Kosyn",
+            "action": "navigate",
+            "target": "/",
+            "description": "App logo — Shield icon + 'Kosyn' text, navigates to home page"
+          },
+          {
+            "label": "Dashboard",
+            "action": "navigate",
+            "target": "/patients/dashboard",
+            "description": "Nav link to patient dashboard"
+          },
+          {
+            "label": "Records",
+            "action": "navigate",
+            "target": "/patients/records",
+            "description": "Nav link to health records page"
+          },
+          {
+            "label": "Book",
+            "action": "navigate",
+            "target": "/patients/book",
+            "description": "Nav link to booking wizard"
+          },
+          {
+            "label": "Sign In",
+            "action": "dialog",
+            "target": "wallet-connect",
+            "description": "Opens Thirdweb Connect wallet modal — email/social login for patients"
+          },
+          {
+            "label": "0.00 KUSD",
+            "action": "api-call",
+            "endpoint": "KosynUSD.balanceOf(address)",
+            "description": "KUSD balance badge — CircleDollarSign icon + formatted balance + KUSD label. Reads from KosynUSD contract on-chain. Only visible when connected"
+          },
+          {
+            "label": "Deposit",
+            "action": "dialog",
+            "target": "deposit-modal",
+            "description": "Opens deposit modal — dashed emerald border button with Plus icon. Shows 'Coming soon' placeholder"
+          },
+          {
+            "label": "Sepolia",
+            "action": "api-call",
+            "endpoint": "useActiveWalletChain()",
+            "description": "Network indicator badge — colored dot + chain name from CHAIN_META lookup. Only visible when connected"
+          },
+          {
+            "label": "0x7458...5B78",
+            "action": "dialog",
+            "target": "wallet-details",
+            "description": "GradientAvatar + Thirdweb detailsButton — opens wallet details panel. Only visible when connected"
+          },
+          {
+            "label": "Approve with Passkey",
+            "action": "submit",
+            "description": "Triggers handleDecryptApprove — usePasskey().verify() calls navigator.credentials.get(), on success sets creActive=true and starts 4s timeout to session phase. Shows Fingerprint icon. Phase: decrypt only"
+          },
+          {
+            "label": "Deny",
+            "action": "confirm-delete",
+            "description": "Denies provider access request — calls onDeny callback. Shows X icon. Phase: decrypt only"
+          },
+          {
+            "label": "Awaiting Approval / In Session / Completed",
+            "action": "toggle",
+            "description": "Phase badge — amber for decrypt, green for session, blue for results. Reflects current phase state variable"
+          }
+        ]
+      },
+      "states": [
+        {
+          "id": "decrypt-phase",
+          "name": "Awaiting Approval",
+          "description": "Patient sees consent card, must approve with passkey. DecryptRequest card on left, CreFeed sidebar on right",
+          "isInitial": true,
+          "mutations": [],
+          "elementDescriptions": {
+            "Kosyn": "Nav logo link — navigates to landing page (/). Renders Shield icon + 'Kosyn' text. Source: hardcoded in NavHeader",
+            "Dashboard": "Nav link to /patients/dashboard — patient's main hub. Highlighted when pathname matches. Source: patientLinks array in NavHeader",
+            "Records": "Nav link to /patients/records — patient health records list. Source: patientLinks array in NavHeader",
+            "Book": "Nav link to /patients/book — schedule new consultation. Source: patientLinks array in NavHeader",
+            "Sign In": "Thirdweb ConnectButton label for patients (not yet connected). Opens email/social login modal. Source: connectButton.label in NavHeader WalletSection",
+            "0.00": "KUSD token balance — reads from KosynUSD.balanceOf(account) on-chain. Formatted to 2 decimal places. Shows 0.00 when no balance. Only visible when connected. Source: KusdBadge component",
+            "KUSD": "Token symbol label next to balance. Only visible when connected. Source: hardcoded in KusdBadge component",
+            "Sepolia": "Active network name badge — reads from useActiveWalletChain(). Displays chain name from CHAIN_META lookup (11155111 = Sepolia). Shows colored dot indicator. Only visible when connected. Source: NetworkBadge component",
+            "Deposit": "Opens deposit modal for KUSD — currently shows 'Coming soon' placeholder. Dashed emerald border button with Plus icon. Only visible when connected. Source: DepositButton component",
+            "0x7458...5B78": "Connected wallet address — GradientAvatar + truncated display from Thirdweb detailsButton. Full address: 0x7458ee961D5147D169F954181d158AD0bf635B78. Only visible when connected",
+            "Consultation #1": "Page heading — dynamic consultation ID from URL params.id. Renders as h1 with text-2xl font-bold. Source: useParams().id",
+            "Dr. Sarah Chen — Internal Medicine": "Subtitle under heading — doctor name and specialty. Demo: hardcoded in PatientConsultationPage. Production: fetched from ProviderRegistry.getProvider(consultationRecord.providerAddress)",
+            "Awaiting Approval": "Amber status badge — consent required before session starts. bg-amber-500/10 text-amber-400 border-amber-500/20. Source: phase state === 'decrypt' in PatientConsultationPage",
+            "Decrypt Request": "CardTitle of the consent card — amber-bordered Card. Shows ShieldAlert icon + title text. Source: DecryptRequest component CardHeader",
+            "Dr. Sarah Chen is requesting access to your health records.": "Consent explanation text — combines doctorName prop ('Dr. Sarah Chen') with static suffix. Source: DecryptRequest component paragraph",
+            "0x1111...1111": "Doctor's on-chain wallet address — displayed as monospace code block. Source: doctorAddress prop passed from PatientConsultationPage",
+            "Requested record types:": "Label above record type badges. Source: hardcoded text in DecryptRequest component",
+            "health": "Record type badge — one of the requested record types. Source: recordTypes prop array ['health', 'prescription'] passed from PatientConsultationPage",
+            "prescription": "Record type badge — second requested record type. Source: recordTypes prop array ['health', 'prescription'] passed from PatientConsultationPage",
+            "Records will be decrypted inside a CRE TEE enclave.": "Privacy notice line 1 — informs patient that decryption happens in Trusted Execution Environment. Source: hardcoded in DecryptRequest info box",
+            "Access is ephemeral and auto-revokes after consultation.": "Privacy notice line 2 — explains temporary access model. Source: hardcoded in DecryptRequest info box",
+            "All access is logged on-chain with CRE attestation.": "Privacy notice line 3 — explains audit trail. Source: hardcoded in DecryptRequest info box",
+            "Approve with Passkey": "Primary action button — triggers WebAuthn navigator.credentials.get() via usePasskey().verify(). On success, calls onApprove which sets creActive=true and starts 4s timeout to session phase. Shows Fingerprint icon. Source: DecryptRequest Button",
+            "Deny": "Secondary outline button — calls onDeny callback (currently no-op). Shows X icon. Source: DecryptRequest Button",
+            "CRE Workflow": "Sidebar card title — shows Cpu icon + 'CRE Workflow' text. Displays provider-decryption workflow steps: 'ACE policy check', 'Decrypting in TEE'. Steps animate from pending -> processing -> done when isActive=true. Source: CreFeed component with workflow='provider-decryption'",
+            "ACE policy check": "CRE workflow step 1 — verifies patient consent via ACE PolicyEngine smart contract. Source: getWorkflowSteps('provider-decryption') in cre.ts",
+            "Decrypting in TEE": "CRE workflow step 2 — decrypts patient records inside CRE Trusted Execution Environment. Source: getWorkflowSteps('provider-decryption') in cre.ts"
+          }
+        },
+        {
+          "id": "session-phase",
+          "name": "Live Session",
+          "description": "Passkey approved, live transcript streaming. LiveTranscript card on left, CreFeed sidebar on right (completed steps)",
+          "triggeredBy": ["Approve with Passkey"],
+          "mutations": [
+            {
+              "textMatch": "Awaiting Approval",
+              "op": { "type": "setText", "value": "In Session" }
+            },
+            {
+              "textMatch": "In Session",
+              "closest": "[class*='badge']",
+              "op": {
+                "type": "setStyle",
+                "styles": {
+                  "background": "rgba(34,197,94,0.1)",
+                  "color": "rgb(74,222,128)",
+                  "border-color": "rgba(34,197,94,0.2)"
+                }
+              }
+            }
+          ],
+          "elementDescriptions": {
+            "Kosyn": "Nav logo link — navigates to landing page (/). Renders Shield icon + 'Kosyn' text. Source: hardcoded in NavHeader",
+            "Dashboard": "Nav link to /patients/dashboard — patient's main hub. Source: patientLinks array in NavHeader",
+            "Records": "Nav link to /patients/records — patient health records list. Source: patientLinks array in NavHeader",
+            "Book": "Nav link to /patients/book — schedule new consultation. Source: patientLinks array in NavHeader",
+            "Sign In": "Thirdweb ConnectButton label for patients. Source: connectButton.label in NavHeader WalletSection",
+            "0.00": "KUSD token balance from KosynUSD.balanceOf(account). Source: KusdBadge component",
+            "KUSD": "Token symbol label next to balance. Source: hardcoded in KusdBadge",
+            "Sepolia": "Active network name badge from useActiveWalletChain(). Source: CHAIN_META in NavHeader",
+            "Deposit": "Opens deposit modal for KUSD. Source: DepositButton in NavHeader",
+            "0x7458...5B78": "Connected wallet address — truncated. Source: Thirdweb detailsButton",
+            "Consultation #1": "Page heading — dynamic consultation ID from URL params.id. Source: useParams().id rendered as h1",
+            "Dr. Sarah Chen — Internal Medicine": "Subtitle under heading — doctor name and specialty. Source: hardcoded in PatientConsultationPage",
+            "In Session": "Green status badge — live consultation in progress. Was 'Awaiting Approval' (amber) before passkey verification. Source: phase state === 'session' in PatientConsultationPage",
+            "Live Transcript": "CardTitle of transcript card — shows Radio icon (red pulsing when recording, muted when idle) + 'Live Transcript' text. Real-time streaming doctor-patient conversation. Source: LiveTranscript component CardHeader",
+            "Start": "Mic toggle button (default state) — clicks handleToggle which calls startTranscription() from AssemblyAI lib, sets isRecording=true. Shows Mic icon. Source: LiveTranscript Button",
+            "Stop": "Mic toggle button (recording state) — clicks handleToggle which calls stopTranscription() and fires onTranscriptComplete with final entries. Shows MicOff icon, destructive variant. Source: LiveTranscript Button",
+            "Demo": "Adds mock transcript entries for demo — cycles through 8 predefined doctor/patient exchanges about headaches. Source: addMockEntry() in LiveTranscript",
+            "No transcript yet. Start recording or click Demo.": "Empty state placeholder — shown when entries.length === 0. Centered muted text in ScrollArea. Source: LiveTranscript conditional render",
+            "Doctor": "Speaker label for doctor transcript entries — displayed as text-xs font-medium text-primary. Source: entry.speaker from AssemblyAI or mock data (speakers[0])",
+            "Patient": "Speaker label for patient transcript entries — displayed as text-xs font-medium text-primary. Source: entry.speaker from AssemblyAI or mock data (speakers[1])",
+            "Can you describe the headaches you've been experiencing?": "Mock transcript line 1 (Doctor) — first demo entry. Source: texts[0] in addMockEntry()",
+            "They usually start in the morning, a dull pressure behind my eyes.": "Mock transcript line 2 (Patient) — second demo entry. Source: texts[1] in addMockEntry()",
+            "How long have they been going on?": "Mock transcript line 3 (Doctor). Source: texts[2] in addMockEntry()",
+            "About two weeks now. They come and go.": "Mock transcript line 4 (Patient). Source: texts[3] in addMockEntry()",
+            "Are you taking any medication currently?": "Mock transcript line 5 (Doctor). Source: texts[4] in addMockEntry()",
+            "Just ibuprofen occasionally, and my Lisinopril for blood pressure.": "Mock transcript line 6 (Patient). Source: texts[5] in addMockEntry()",
+            "Any changes in vision or nausea with the headaches?": "Mock transcript line 7 (Doctor). Source: texts[6] in addMockEntry()",
+            "No vision changes, but some mild nausea sometimes.": "Mock transcript line 8 (Patient). Source: texts[7] in addMockEntry()",
+            "CRE Workflow": "Sidebar card title — shows provider-decryption workflow steps (already completed in this phase). Source: CreFeed component with workflow='provider-decryption' and isActive=false",
+            "ACE policy check": "CRE workflow step 1 (completed) — ACE PolicyEngine verification done. Source: getWorkflowSteps('provider-decryption')",
+            "Decrypting in TEE": "CRE workflow step 2 (completed) — records decrypted in TEE. Source: getWorkflowSteps('provider-decryption')"
+          }
+        },
+        {
+          "id": "results-phase",
+          "name": "Completed -- AI Results",
+          "description": "Consultation ended, AI analysis displayed. AiResults card on left, CreFeed sidebar on right (completed steps)",
+          "triggeredBy": ["onTranscriptComplete"],
+          "mutations": [
+            {
+              "textMatch": "In Session",
+              "op": { "type": "setText", "value": "Completed" }
+            },
+            {
+              "textMatch": "Completed",
+              "closest": "[class*='badge']",
+              "op": {
+                "type": "setStyle",
+                "styles": {
+                  "background": "rgba(59,130,246,0.1)",
+                  "color": "rgb(96,165,250)",
+                  "border-color": "rgba(59,130,246,0.2)"
+                }
+              }
+            }
+          ],
+          "elementDescriptions": {
+            "Kosyn": "Nav logo link — navigates to landing page (/). Source: hardcoded in NavHeader",
+            "Dashboard": "Nav link to /patients/dashboard. Source: patientLinks array in NavHeader",
+            "Records": "Nav link to /patients/records. Source: patientLinks array in NavHeader",
+            "Book": "Nav link to /patients/book. Source: patientLinks array in NavHeader",
+            "Sign In": "Thirdweb ConnectButton label for patients. Source: NavHeader WalletSection",
+            "0.00": "KUSD token balance. Source: KusdBadge reading KosynUSD.balanceOf(account)",
+            "KUSD": "Token symbol label. Source: hardcoded in KusdBadge",
+            "Sepolia": "Active network badge. Source: CHAIN_META in NavHeader",
+            "Deposit": "Opens deposit modal. Source: DepositButton in NavHeader",
+            "0x7458...5B78": "Connected wallet address truncated. Source: Thirdweb detailsButton",
+            "Consultation #1": "Page heading — dynamic consultation ID from URL params.id. Source: useParams().id rendered as h1",
+            "Dr. Sarah Chen — Internal Medicine": "Subtitle under heading. Source: hardcoded in PatientConsultationPage",
+            "Completed": "Blue status badge — consultation finished, AI results available. Progression: Awaiting Approval (amber) -> In Session (green) -> Completed (blue). Source: phase state === 'results' in PatientConsultationPage",
+            "AI Clinical Analysis": "CardTitle of results card — displays Gemini 2.0 Flash TEE analysis. Raw transcript never left the enclave, only structured analysis returned. Source: AiResults component CardHeader",
+            "Generated by Gemini 2.0 Flash inside CRE TEE enclave. PII stripped before analysis.": "Subtitle under AI Clinical Analysis title — explains provenance and privacy guarantees. Source: hardcoded paragraph in AiResults CardHeader",
+            "SOAP Note": "Tab trigger for SOAP note view — renders subjective/objective/assessment/plan sections. Source: TabsTrigger value='soap' in AiResults Tabs",
+            "Summary": "Tab trigger for summary + risk scores view. Source: TabsTrigger value='summary' in AiResults Tabs",
+            "Codes": "Tab trigger for ICD-10 and CPT medical codes view. Source: TabsTrigger value='codes' in AiResults Tabs",
+            "Interactions": "Tab trigger for drug interactions view with severity badges. Source: TabsTrigger value='interactions' in AiResults Tabs",
+            "SUBJECTIVE": "SOAP section header (uppercase) — label for patient-reported symptoms. Source: section name rendered via .map() in AiResults, text-xs font-medium uppercase",
+            "Patient reports persistent headaches for 2 weeks, dull pressure behind eyes, worse in mornings. Mild nausea occasionally. No vision changes.": "SOAP Subjective content — patient-reported symptoms from AI analysis. Demo: static mockResults object. Production: returned from CRE TEE. Source: mockResults.soapNote.subjective in AiResults",
+            "OBJECTIVE": "SOAP section header (uppercase) — label for clinician observations. Source: section name rendered via .map() in AiResults",
+            "BP 130/85 mmHg, HR 72 bpm, Temp 98.6F. Alert and oriented. No papilledema. PERRLA. No focal neurological deficits. Mild tenderness at bilateral temporal regions.": "SOAP Objective content — clinical examination findings. Demo: static mockResults object. Production: returned from CRE TEE. Source: mockResults.soapNote.objective in AiResults",
+            "ASSESSMENT": "SOAP section header (uppercase) — label for clinical assessment. Source: section name rendered via .map() in AiResults",
+            "Tension-type headache, likely stress-related. Mild hypertension noted -- currently managed with Lisinopril 10mg. No red flags for secondary headache.": "SOAP Assessment content — diagnosis from AI analysis. Demo: static mockResults object. Production: returned from CRE TEE. Source: mockResults.soapNote.assessment in AiResults",
+            "PLAN": "SOAP section header (uppercase) — label for treatment plan. Source: section name rendered via .map() in AiResults",
+            "1. Continue Ibuprofen 400mg PRN (max 3/day). 2. Stress management and sleep hygiene counseling. 3. Consider adjusting Lisinopril dose. 4. Follow-up in 2 weeks. 5. MRI if symptoms persist beyond 4 weeks.": "SOAP Plan content — treatment plan from AI analysis. Demo: static mockResults object. Production: returned from CRE TEE. Source: mockResults.soapNote.plan in AiResults",
+            "32-year-old patient with 2-week history of tension-type headaches. Currently on Lisinopril 10mg for mild hypertension. Neurological exam unremarkable. Plan includes symptomatic management, lifestyle modifications, and close follow-up.": "Summary tab main text — AI-generated clinical summary. Demo: static mockResults object. Production: returned from CRE TEE. Source: mockResults.summary in AiResults",
+            "Risk Scores": "Label above risk score grid in Summary tab. Source: hardcoded uppercase text in AiResults summary TabsContent",
+            "cardiovascular": "Risk category label — cardiovascular risk. Source: Object.entries(mockResults.riskScores) key, rendered with capitalize class",
+            "25/100": "Cardiovascular risk score value — green (<=25). Source: mockResults.riskScores.cardiovascular = 25, formatted as val/100",
+            "metabolic": "Risk category label — metabolic risk. Source: riskScores key",
+            "18/100": "Metabolic risk score value — green (<=25). Source: mockResults.riskScores.metabolic = 18",
+            "respiratory": "Risk category label — respiratory risk. Source: riskScores key",
+            "5/100": "Respiratory risk score value — green (<=25). Source: mockResults.riskScores.respiratory = 5",
+            "oncological": "Risk category label — oncological risk. Source: riskScores key",
+            "2/100": "Oncological risk score value — green (<=25). Source: mockResults.riskScores.oncological = 2",
+            "ICD-10 Diagnoses": "Label above ICD-10 code badges in Codes tab. Source: hardcoded uppercase text in AiResults codes TabsContent",
+            "G44.209 -- Tension-type headache, unspecified": "ICD-10 diagnosis badge — primary diagnosis code. Source: mockResults.medicalCodes.icd10[0]",
+            "I10 -- Essential hypertension": "ICD-10 diagnosis badge — secondary diagnosis code. Source: mockResults.medicalCodes.icd10[1]",
+            "CPT Procedures": "Label above CPT code badges in Codes tab. Source: hardcoded uppercase text in AiResults codes TabsContent",
+            "99213 -- Office visit, established patient": "CPT procedure badge — primary billing code. Source: mockResults.medicalCodes.cpt[0]",
+            "95819 -- EEG with sleep": "CPT procedure badge — secondary billing code. Source: mockResults.medicalCodes.cpt[1]",
+            "Ibuprofen + Lisinopril": "Drug interaction pair name — shown with AlertTriangle icon. Source: mockResults.drugInteractions[0].drugs.join(' + ')",
+            "moderate": "Severity badge for drug interaction — amber colored. Source: mockResults.drugInteractions[0].severity",
+            "NSAIDs may reduce the antihypertensive effect of ACE inhibitors and increase risk of renal impairment.": "Drug interaction description text — clinical detail. Source: mockResults.drugInteractions[0].description",
+            "CRE Workflow": "Sidebar card — shows provider-decryption workflow steps (completed). Source: CreFeed with workflow='provider-decryption'",
+            "ACE policy check": "CRE workflow step 1 (completed). Source: getWorkflowSteps('provider-decryption')",
+            "Decrypting in TEE": "CRE workflow step 2 (completed). Source: getWorkflowSteps('provider-decryption')"
+          }
+        }
+      ],
+      "appFlows": [
+        {
+          "id": "patient-approve-access",
+          "name": "Patient approves record access",
+          "steps": [
+            {
+              "order": 1,
+              "layer": "ui",
+              "description": "DecryptRequest shows doctor info and requested record types"
+            },
+            {
+              "order": 2,
+              "layer": "auth",
+              "description": "Patient clicks 'Approve with Passkey', WebAuthn dialog appears"
+            },
+            {
+              "order": 3,
+              "layer": "auth",
+              "description": "usePasskey().verify() calls navigator.credentials.get()"
+            },
+            {
+              "order": 4,
+              "layer": "ui",
+              "description": "CreFeed activates, animates provider-decryption workflow steps"
+            },
+            {
+              "order": 5,
+              "layer": "ui",
+              "description": "After 4s timeout, phase advances to 'session'"
+            }
+          ]
+        },
+        {
+          "id": "patient-live-transcript",
+          "name": "Live transcription session",
+          "steps": [
+            {
+              "order": 1,
+              "layer": "ui",
+              "description": "Patient clicks Start button in LiveTranscript"
+            },
+            {
+              "order": 2,
+              "layer": "external",
+              "description": "getToken() from /api/assemblyai/token, WebSocket opens to AssemblyAI"
+            },
+            {
+              "order": 3,
+              "layer": "external",
+              "description": "MediaRecorder captures mic, sends 250ms audio chunks"
+            },
+            {
+              "order": 4,
+              "layer": "ui",
+              "description": "Transcript entries stream in with speaker labels and timestamps"
+            },
+            {
+              "order": 5,
+              "layer": "ui",
+              "description": "Patient clicks Stop, onTranscriptComplete fires, phase advances to results"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "consultation.provider",
+      "name": "Provider Consultation View",
+      "route": "/doctors/consultation/[id]",
+      "status": "implemented",
+      "description": "2-phase doctor view: session (transcript + patient vitals) -> results (AI analysis + AI editor)",
+      "ui": {
+        "layout": "3-column (2+1)",
+        "sections": [
+          {
+            "type": "phase",
+            "id": "session",
+            "label": "In Session",
+            "components": [
+              {
+                "name": "LiveTranscript",
+                "description": "Same as patient side — mic toggle, demo mode, scrollable transcript"
+              },
+              {
+                "name": "PatientData",
+                "description": "Inline card showing decrypted vitals: Weight 75kg, BP 130/85, Medications Lisinopril 10mg, Allergies Penicillin. 'Decrypted' badge."
+              },
+              {
+                "name": "CreFeed",
+                "description": "CRE workflow feed for consultation-processing, isActive during processing"
+              }
+            ],
+            "actions": [
+              {
+                "label": "End Consultation",
+                "variant": "destructive",
+                "action": "api-call",
+                "endpoint": "/api/cre/consultation-processing"
+              }
+            ]
+          },
+          {
+            "type": "phase",
+            "id": "results",
+            "label": "Review Results",
+            "components": [
+              {
+                "name": "AiResults",
+                "description": "Tab 1: SOAP note, summary, codes, interactions (same as patient side)"
+              },
+              {
+                "name": "AiChat",
+                "description": "Tab 2: AI Editor — streaming Claude Service chat for refining clinical notes"
+              }
+            ]
+          }
+        ],
+        "actions": [
+          {
+            "label": "Kosyn",
+            "action": "navigate",
+            "target": "/",
+            "description": "App logo — Shield icon + 'Kosyn' text, navigates to home page"
+          },
+          {
+            "label": "Dashboard",
+            "action": "navigate",
+            "target": "/doctors/dashboard",
+            "description": "Nav link to provider dashboard"
+          },
+          {
+            "label": "Register",
+            "action": "navigate",
+            "target": "/doctors/onboarding",
+            "description": "Nav link to provider registration/onboarding page"
+          },
+          {
+            "label": "Connect Wallet",
+            "action": "dialog",
+            "target": "wallet-connect",
+            "description": "Opens Thirdweb Connect wallet modal — MetaMask for providers"
+          },
+          {
+            "label": "0.00 KUSD",
+            "action": "api-call",
+            "endpoint": "KosynUSD.balanceOf(address)",
+            "description": "KUSD balance badge — CircleDollarSign icon + formatted balance + KUSD label. Only visible when connected"
+          },
+          {
+            "label": "Deposit",
+            "action": "dialog",
+            "target": "deposit-modal",
+            "description": "Opens deposit modal — dashed emerald border button with Plus icon. Only visible when connected"
+          },
+          {
+            "label": "Sepolia",
+            "action": "api-call",
+            "endpoint": "useActiveWalletChain()",
+            "description": "Network indicator badge — colored dot + chain name. Only visible when connected"
+          },
+          {
+            "label": "0x7458...5B78",
+            "action": "dialog",
+            "target": "wallet-details",
+            "description": "GradientAvatar + Thirdweb detailsButton — opens wallet details panel. Only visible when connected"
+          },
+          {
+            "label": "End Consultation",
+            "action": "api-call",
+            "endpoint": "/api/cre/consultation-processing",
+            "description": "Destructive button — triggers handleTranscriptComplete which calls triggerWorkflow('consultation-processing', { consultationId, transcript }), sets creActive=true, then after 6s timeout advances to results phase. Phase: session only"
+          },
+          {
+            "label": "AI Results",
+            "action": "toggle",
+            "description": "Tab trigger — switches to AI analysis results view (AiResults component). Phase: results only"
+          },
+          {
+            "label": "AI Editor",
+            "action": "toggle",
+            "description": "Tab trigger — switches to AI chat editor view (AiChat component). Phase: results only"
+          },
+          {
+            "label": "Start",
+            "action": "api-call",
+            "endpoint": "AssemblyAI.startTranscription()",
+            "description": "Start real-time voice transcription via AssemblyAI. Shows Mic icon. Phase: session only"
+          },
+          {
+            "label": "Stop",
+            "action": "api-call",
+            "endpoint": "AssemblyAI.stopTranscription()",
+            "description": "Stop transcription and finalize transcript. Shows MicOff icon, destructive variant. Phase: session only"
+          },
+          {
+            "label": "Demo",
+            "action": "toggle",
+            "description": "Add mock transcript entries for demo — cycles through 8 predefined exchanges. Phase: session only"
+          }
+        ]
+      },
+      "states": [
+        {
+          "id": "session-phase",
+          "name": "In Session",
+          "description": "Provider sees live transcript + End Consultation button on left, Patient Data card + CreFeed sidebar on right",
+          "isInitial": true,
+          "mutations": [],
+          "elementDescriptions": {
+            "Kosyn": "Nav logo link — navigates to landing page (/). Renders Shield icon + 'Kosyn' text. Source: hardcoded in NavHeader",
+            "Dashboard": "Nav link to /doctors/dashboard — provider's main hub. Source: providerLinks array in NavHeader (isProvider=true)",
+            "Register": "Nav link to /doctors/onboarding — provider registration page. Source: providerLinks array in NavHeader",
+            "Connect Wallet": "Thirdweb ConnectButton label for providers — opens MetaMask connection. Source: connectButton.label with isProvider=true in NavHeader WalletSection",
+            "0.00": "KUSD token balance from KosynUSD.balanceOf(account). Only visible when connected. Source: KusdBadge component",
+            "KUSD": "Token symbol label next to balance. Only visible when connected. Source: hardcoded in KusdBadge",
+            "Sepolia": "Active network name badge from useActiveWalletChain(). Only visible when connected. Source: CHAIN_META in NavHeader",
+            "Deposit": "Opens deposit modal for KUSD. Only visible when connected. Source: DepositButton in NavHeader",
+            "0x7458...5B78": "Connected wallet address truncated. Only visible when connected. Source: Thirdweb detailsButton",
+            "Consultation #1": "Page heading — dynamic consultation ID from URL params.id. Source: useParams().id rendered as h1 in DoctorConsultationPage",
+            "Patient: John D. -- Referred for headache evaluation": "Subtitle under heading — patient name and referral reason. Demo: hardcoded in DoctorConsultationPage. Production: fetched from consultation booking record + HealthRecordRegistry.getPatient(address)",
+            "In Session": "Green status badge — live consultation in progress. bg-green-500/10 text-green-400 border-green-500/20. Source: phase state === 'session' in DoctorConsultationPage. Changes to 'Review Results' (blue) after ending consultation",
+            "Live Transcript": "CardTitle of transcript card — shows Radio icon (red pulsing when recording, muted when idle) + 'Live Transcript' text. Source: LiveTranscript component CardHeader",
+            "Start": "Mic toggle button (default state) — calls startTranscription() from AssemblyAI lib. Shows Mic icon. Source: LiveTranscript Button",
+            "Stop": "Mic toggle button (recording state) — calls stopTranscription() and fires onTranscriptComplete. Shows MicOff icon, destructive variant. Source: LiveTranscript Button",
+            "Demo": "Adds mock transcript entries — cycles through 8 predefined doctor/patient exchanges about headaches. Source: addMockEntry() in LiveTranscript",
+            "No transcript yet. Start recording or click Demo.": "Empty state placeholder — shown when entries.length === 0. Source: LiveTranscript conditional render",
+            "Doctor": "Speaker label for doctor transcript entries. Source: entry.speaker from AssemblyAI or mock data",
+            "Patient": "Speaker label for patient transcript entries. Source: entry.speaker from AssemblyAI or mock data",
+            "Can you describe the headaches you've been experiencing?": "Mock transcript line 1 (Doctor). Source: texts[0] in addMockEntry()",
+            "They usually start in the morning, a dull pressure behind my eyes.": "Mock transcript line 2 (Patient). Source: texts[1] in addMockEntry()",
+            "How long have they been going on?": "Mock transcript line 3 (Doctor). Source: texts[2] in addMockEntry()",
+            "About two weeks now. They come and go.": "Mock transcript line 4 (Patient). Source: texts[3] in addMockEntry()",
+            "Are you taking any medication currently?": "Mock transcript line 5 (Doctor). Source: texts[4] in addMockEntry()",
+            "Just ibuprofen occasionally, and my Lisinopril for blood pressure.": "Mock transcript line 6 (Patient). Source: texts[5] in addMockEntry()",
+            "Any changes in vision or nausea with the headaches?": "Mock transcript line 7 (Doctor). Source: texts[6] in addMockEntry()",
+            "No vision changes, but some mild nausea sometimes.": "Mock transcript line 8 (Patient). Source: texts[7] in addMockEntry()",
+            "End Consultation": "Destructive button below transcript — calls handleTranscriptComplete which triggers CRE consultation-processing workflow, adds mock transcript entry, sets creActive=true, then after 6s timeout advances to results phase. Source: Button in DoctorConsultationPage",
+            "Patient Data": "Sidebar card title — shows decrypted patient vitals in a bordered card. Source: CardTitle in DoctorConsultationPage sidebar Card",
+            "Health Records": "Label inside patient data card — displayed with FileText icon. Source: span in DoctorConsultationPage sidebar",
+            "Decrypted": "Emerald badge with Lock icon — indicates records have been decrypted via CRE TEE. Source: Badge in DoctorConsultationPage patient data card",
+            "Weight:": "Vitals label — muted foreground text. Source: hardcoded span in DoctorConsultationPage patient data",
+            "75kg": "Patient weight value. Demo: hardcoded placeholder. Production: decrypted PHI from CRE TEE via POST /api/cre/provider-access",
+            "BP:": "Vitals label — blood pressure. Source: hardcoded span in DoctorConsultationPage",
+            "130/85 mmHg": "Patient blood pressure value. Demo: hardcoded placeholder. Production: decrypted PHI from CRE TEE",
+            "Medications:": "Vitals label — current medications. Source: hardcoded span in DoctorConsultationPage",
+            "Lisinopril 10mg": "Patient medication value. Demo: hardcoded placeholder. Production: decrypted PHI from CRE TEE",
+            "Allergies:": "Vitals label — known allergies. Source: hardcoded span in DoctorConsultationPage",
+            "Penicillin": "Patient allergy value. Demo: hardcoded placeholder. Production: decrypted PHI from CRE TEE",
+            "CRE Workflow": "Sidebar card below patient data — shows consultation-processing workflow steps. Steps: 'Encrypting transcript', 'Stripping PII (HIPAA)', 'AI analysis (Gemini TEE)', 'Storing results on IPFS', 'Recording on-chain'. Animates when isActive=true (after End Consultation). Source: CreFeed with workflow='consultation-processing'",
+            "Encrypting transcript": "CRE workflow step 1 — encrypts transcript in TEE. Source: getWorkflowSteps('consultation-processing')",
+            "Stripping PII (HIPAA)": "CRE workflow step 2 — removes personally identifiable information for HIPAA compliance. Source: getWorkflowSteps('consultation-processing')",
+            "AI analysis (Gemini TEE)": "CRE workflow step 3 — runs Gemini 2.0 Flash inside TEE enclave for clinical analysis. Source: getWorkflowSteps('consultation-processing')",
+            "Storing results on IPFS": "CRE workflow step 4 — stores encrypted analysis results on IPFS via Pinata. Source: getWorkflowSteps('consultation-processing')",
+            "Recording on-chain": "CRE workflow step 5 — writes result hash to HealthRecordRegistry contract. Source: getWorkflowSteps('consultation-processing')"
+          }
+        },
+        {
+          "id": "results-phase",
+          "name": "Review Results",
+          "description": "Consultation ended, AI analysis in Tabs (AI Results / AI Editor) on left, Patient Data card + CreFeed sidebar on right (completed steps)",
+          "triggeredBy": ["End Consultation"],
+          "mutations": [
+            {
+              "textMatch": "In Session",
+              "op": { "type": "setText", "value": "Review Results" }
+            },
+            {
+              "textMatch": "Review Results",
+              "closest": "[class*='badge']",
+              "op": {
+                "type": "setStyle",
+                "styles": {
+                  "background": "rgba(59,130,246,0.1)",
+                  "color": "rgb(96,165,250)",
+                  "border-color": "rgba(59,130,246,0.2)"
+                }
+              }
+            }
+          ],
+          "elementDescriptions": {
+            "Kosyn": "Nav logo link — navigates to landing page (/). Source: hardcoded in NavHeader",
+            "Dashboard": "Nav link to /doctors/dashboard. Source: providerLinks array in NavHeader",
+            "Register": "Nav link to /doctors/onboarding. Source: providerLinks array in NavHeader",
+            "Connect Wallet": "Thirdweb ConnectButton label for providers. Source: NavHeader WalletSection",
+            "0.00": "KUSD token balance. Source: KusdBadge",
+            "KUSD": "Token symbol label. Source: KusdBadge",
+            "Sepolia": "Active network badge. Source: NavHeader",
+            "Deposit": "Opens deposit modal. Source: DepositButton",
+            "0x7458...5B78": "Connected wallet address. Source: Thirdweb detailsButton",
+            "Consultation #1": "Page heading — dynamic consultation ID. Source: useParams().id",
+            "Patient: John D. -- Referred for headache evaluation": "Subtitle under heading. Demo: hardcoded in DoctorConsultationPage. Production: fetched from consultation booking record",
+            "Review Results": "Blue status badge — consultation finished, AI results available. Was 'In Session' (green) during live transcript. Source: phase state === 'results' in DoctorConsultationPage",
+            "AI Results": "Tab trigger for AI analysis results view — shows SOAP note, summary, codes, interactions via AiResults component. Source: TabsTrigger value='results' in DoctorConsultationPage Tabs",
+            "AI Editor": "Tab trigger for AI chat editor — streaming Claude Service chat for refining clinical notes via AiChat component. Source: TabsTrigger value='chat' in DoctorConsultationPage Tabs",
+            "AI Clinical Analysis": "CardTitle of results card — displays Gemini 2.0 Flash TEE analysis output. Source: AiResults component CardHeader",
+            "Generated by Gemini 2.0 Flash inside CRE TEE enclave. PII stripped before analysis.": "Subtitle explaining AI provenance and privacy. Source: hardcoded in AiResults CardHeader",
+            "SOAP Note": "Tab trigger for SOAP note sections. Source: TabsTrigger value='soap' in AiResults inner Tabs",
+            "Summary": "Tab trigger for summary + risk scores. Source: TabsTrigger value='summary' in AiResults",
+            "Codes": "Tab trigger for ICD-10 and CPT codes. Source: TabsTrigger value='codes' in AiResults",
+            "Interactions": "Tab trigger for drug interactions. Source: TabsTrigger value='interactions' in AiResults",
+            "SUBJECTIVE": "SOAP section header — patient-reported symptoms. Source: AiResults .map() uppercase labels",
+            "Patient reports persistent headaches for 2 weeks, dull pressure behind eyes, worse in mornings. Mild nausea occasionally. No vision changes.": "SOAP Subjective content. Demo: static mockResults object. Production: returned from CRE TEE. Source: mockResults.soapNote.subjective",
+            "OBJECTIVE": "SOAP section header — clinician observations. Source: AiResults .map()",
+            "BP 130/85 mmHg, HR 72 bpm, Temp 98.6F. Alert and oriented. No papilledema. PERRLA. No focal neurological deficits. Mild tenderness at bilateral temporal regions.": "SOAP Objective content. Demo: static mockResults object. Production: returned from CRE TEE. Source: mockResults.soapNote.objective",
+            "ASSESSMENT": "SOAP section header — clinical assessment. Source: AiResults .map()",
+            "Tension-type headache, likely stress-related. Mild hypertension noted -- currently managed with Lisinopril 10mg. No red flags for secondary headache.": "SOAP Assessment content. Demo: static mockResults object. Production: returned from CRE TEE. Source: mockResults.soapNote.assessment",
+            "PLAN": "SOAP section header — treatment plan. Source: AiResults .map()",
+            "1. Continue Ibuprofen 400mg PRN (max 3/day). 2. Stress management and sleep hygiene counseling. 3. Consider adjusting Lisinopril dose. 4. Follow-up in 2 weeks. 5. MRI if symptoms persist beyond 4 weeks.": "SOAP Plan content. Demo: static mockResults object. Production: returned from CRE TEE. Source: mockResults.soapNote.plan",
+            "32-year-old patient with 2-week history of tension-type headaches. Currently on Lisinopril 10mg for mild hypertension. Neurological exam unremarkable. Plan includes symptomatic management, lifestyle modifications, and close follow-up.": "Summary tab text. Demo: static mockResults object. Production: returned from CRE TEE. Source: mockResults.summary",
+            "Risk Scores": "Label above risk score grid. Source: hardcoded in AiResults summary tab",
+            "cardiovascular": "Risk category label. Source: riskScores key",
+            "25/100": "Cardiovascular risk score — green. Source: mockResults.riskScores.cardiovascular",
+            "metabolic": "Risk category label. Source: riskScores key",
+            "18/100": "Metabolic risk score — green. Source: mockResults.riskScores.metabolic",
+            "respiratory": "Risk category label. Source: riskScores key",
+            "5/100": "Respiratory risk score — green. Source: mockResults.riskScores.respiratory",
+            "oncological": "Risk category label. Source: riskScores key",
+            "2/100": "Oncological risk score — green. Source: mockResults.riskScores.oncological",
+            "ICD-10 Diagnoses": "Label above ICD-10 badges. Source: hardcoded in AiResults codes tab",
+            "G44.209 -- Tension-type headache, unspecified": "ICD-10 badge — primary diagnosis. Source: mockResults.medicalCodes.icd10[0]",
+            "I10 -- Essential hypertension": "ICD-10 badge — secondary diagnosis. Source: mockResults.medicalCodes.icd10[1]",
+            "CPT Procedures": "Label above CPT badges. Source: hardcoded in AiResults codes tab",
+            "99213 -- Office visit, established patient": "CPT badge — primary billing code. Source: mockResults.medicalCodes.cpt[0]",
+            "95819 -- EEG with sleep": "CPT badge — secondary billing code. Source: mockResults.medicalCodes.cpt[1]",
+            "Ibuprofen + Lisinopril": "Drug interaction pair. Source: mockResults.drugInteractions[0].drugs.join(' + ')",
+            "moderate": "Severity badge — amber. Source: mockResults.drugInteractions[0].severity",
+            "NSAIDs may reduce the antihypertensive effect of ACE inhibitors and increase risk of renal impairment.": "Interaction description. Source: mockResults.drugInteractions[0].description",
+            "AI Clinical Assistant": "CardTitle of AI chat editor — shows Bot icon + title. Source: AiChat component CardHeader",
+            "Hello, I'm your AI clinical assistant. I can help with SOAP notes, medical coding, drug interactions, and document generation. What would you like to work on?": "Initial assistant message in AI Editor chat. Source: initial messages array in AiChat useState",
+            "Ask about SOAP notes, medical codes, drug interactions...": "Textarea placeholder in AI chat input. Source: Textarea placeholder in AiChat",
+            "Patient Data": "Sidebar card title — shows decrypted patient vitals (persists across both phases). Source: CardTitle in DoctorConsultationPage sidebar",
+            "Health Records": "Label with FileText icon inside patient data card. Source: DoctorConsultationPage sidebar",
+            "Decrypted": "Emerald badge with Lock icon — records decrypted via CRE TEE. Source: Badge in DoctorConsultationPage",
+            "Weight:": "Vitals label. Source: hardcoded in DoctorConsultationPage",
+            "75kg": "Patient weight. Demo: hardcoded placeholder. Production: decrypted PHI from CRE TEE",
+            "BP:": "Vitals label. Source: hardcoded in DoctorConsultationPage",
+            "130/85 mmHg": "Blood pressure value. Demo: hardcoded placeholder. Production: decrypted PHI from CRE TEE",
+            "Medications:": "Vitals label. Source: hardcoded in DoctorConsultationPage",
+            "Lisinopril 10mg": "Medication value. Demo: hardcoded placeholder. Production: decrypted PHI from CRE TEE",
+            "Allergies:": "Vitals label. Source: hardcoded in DoctorConsultationPage",
+            "Penicillin": "Allergy value. Demo: hardcoded placeholder. Production: decrypted PHI from CRE TEE",
+            "CRE Workflow": "Sidebar card — consultation-processing workflow steps (completed). Source: CreFeed with workflow='consultation-processing' and isActive=false",
+            "Encrypting transcript": "CRE step 1 (completed). Source: getWorkflowSteps('consultation-processing')",
+            "Stripping PII (HIPAA)": "CRE step 2 (completed). Source: getWorkflowSteps('consultation-processing')",
+            "AI analysis (Gemini TEE)": "CRE step 3 (completed). Source: getWorkflowSteps('consultation-processing')",
+            "Storing results on IPFS": "CRE step 4 (completed). Source: getWorkflowSteps('consultation-processing')",
+            "Recording on-chain": "CRE step 5 (completed). Source: getWorkflowSteps('consultation-processing')"
+          }
+        }
+      ],
+      "appFlows": [
+        {
+          "id": "provider-end-consultation",
+          "name": "End consultation and get AI analysis",
+          "steps": [
+            {
+              "order": 1,
+              "layer": "ui",
+              "description": "Provider clicks 'End Consultation' destructive button"
+            },
+            {
+              "order": 2,
+              "layer": "ui",
+              "description": "Mock transcript entry added, transcript text compiled"
+            },
+            {
+              "order": 3,
+              "layer": "api",
+              "description": "triggerWorkflow('consultation-processing', { consultationId, transcript }) via POST /api/cre/consultation-processing"
+            },
+            {
+              "order": 4,
+              "layer": "ui",
+              "description": "CreFeed activates, shows processing steps"
+            },
+            {
+              "order": 5,
+              "layer": "ui",
+              "description": "After 6s timeout, phase advances to results with AiResults + AiChat tabs"
+            }
+          ]
+        },
+        {
+          "id": "provider-edit-with-ai",
+          "name": "Provider edits notes with AI",
+          "steps": [
+            {
+              "order": 1,
+              "layer": "ui",
+              "description": "Provider switches to 'AI Editor' tab"
+            },
+            {
+              "order": 2,
+              "layer": "ui",
+              "description": "Types refinement request in AiChat textarea"
+            },
+            {
+              "order": 3,
+              "layer": "api",
+              "description": "chat({ prompt, model: 'sonnet' }) streams to Claude Service"
+            },
+            {
+              "order": 4,
+              "layer": "ui",
+              "description": "Streaming response appears in chat bubble"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "apiEndpoints": [],
+  "dbTables": []
+}

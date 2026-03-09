@@ -1,0 +1,115 @@
+{
+  "id": "payments",
+  "name": "Payments",
+  "description": "Stripe checkout, webhook processing, KUSD minting",
+  "color": "#ef4444",
+  "icon": "CreditCard",
+  "screens": [],
+  "apiEndpoints": [
+    {
+      "id": "payments.stripe-checkout",
+      "name": "Stripe Checkout Session",
+      "route": "/api/stripe/checkout",
+      "method": "POST",
+      "status": "implemented",
+      "description": "Creates a Stripe checkout session for consultation payment. Returns session URL for redirect.",
+      "auth": "none",
+      "requestBody": {
+        "amount": "number (dollar amount, e.g. 50.00)",
+        "doctorName": "string"
+      },
+      "responseShape": {
+        "url": "string (Stripe checkout URL)",
+        "sessionId": "string (cs_test_...)"
+      },
+      "serverFlow": [
+        {
+          "order": 1,
+          "layer": "middleware",
+          "description": "Initialize Stripe SDK with STRIPE_SECRET_KEY, API version 2025-04-30.basil"
+        },
+        {
+          "order": 2,
+          "layer": "validation",
+          "description": "Parse { amount, doctorName } from request JSON body"
+        },
+        {
+          "order": 3,
+          "layer": "external",
+          "description": "stripe.checkout.sessions.create() — mode: payment, single line item: 'Consultation with {doctorName}', price: amount*100 cents USD"
+        },
+        {
+          "order": 4,
+          "layer": "external",
+          "description": "Set success_url: /book?payment=success&amount&doctor, cancel_url: /book?payment=cancelled. Metadata: { doctorName, amount }"
+        },
+        {
+          "order": 5,
+          "layer": "response",
+          "description": "Return { url: session.url, sessionId: session.id }"
+        }
+      ],
+      "errorResponses": [
+        {
+          "status": 500,
+          "code": "STRIPE_ERROR",
+          "description": "Stripe SDK error or missing STRIPE_SECRET_KEY",
+          "when": "Stripe API call fails"
+        }
+      ],
+      "calledBy": ["patient.book (PaymentForm, Stripe payment method)"]
+    },
+    {
+      "id": "payments.stripe-webhook",
+      "name": "Stripe Webhook Handler",
+      "route": "/api/stripe/webhook",
+      "method": "POST",
+      "status": "implemented",
+      "description": "Verifies Stripe webhook signature and triggers KUSD mint on checkout.session.completed",
+      "auth": "Stripe webhook signature (stripe-signature header + STRIPE_WEBHOOK_SECRET)",
+      "requestBody": {
+        "raw": "string (Stripe event payload, read as raw text for signature verification)"
+      },
+      "responseShape": {
+        "received": "boolean (always true on success)"
+      },
+      "serverFlow": [
+        {
+          "order": 1,
+          "layer": "middleware",
+          "description": "Read raw request body as text (required for signature verification)"
+        },
+        {
+          "order": 2,
+          "layer": "auth",
+          "description": "If stripe-signature header + STRIPE_WEBHOOK_SECRET present: stripe.webhooks.constructEvent(). Otherwise: JSON.parse fallback (dev mode)"
+        },
+        {
+          "order": 3,
+          "layer": "validation",
+          "description": "Check event.type === 'checkout.session.completed'"
+        },
+        {
+          "order": 4,
+          "layer": "external",
+          "description": "triggerWorkflow('payment-mint', { amount: session.amount_total/100, sessionId: session.id })"
+        },
+        {
+          "order": 5,
+          "layer": "response",
+          "description": "Return { received: true } with 200"
+        }
+      ],
+      "errorResponses": [
+        {
+          "status": 400,
+          "code": "INVALID_SIGNATURE",
+          "description": "Invalid webhook signature",
+          "when": "stripe.webhooks.constructEvent throws"
+        }
+      ],
+      "calledBy": ["Stripe (external webhook)"]
+    }
+  ],
+  "dbTables": []
+}

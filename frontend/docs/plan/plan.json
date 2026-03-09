@@ -1,0 +1,570 @@
+{
+  "app": {
+    "name": "Kosyn AI",
+    "description": "HIPAA-compliant Electronic Health Record system on Chainlink CRE. Patients own health data, providers access with consent, AI analyzes records inside TEE enclaves.",
+    "version": "0.1.0",
+    "techStack": {
+      "framework": "Next.js 15 (App Router)",
+      "language": "TypeScript",
+      "auth": "Thirdweb Connect (email/social for patients, MetaMask for providers)",
+      "ui": "shadcn/ui + Tailwind CSS v4",
+      "stateManagement": "React Query + React useState",
+      "ai": "Claude Service (app-level), Gemini 2.0 Flash (CRE TEE)",
+      "blockchain": "Foundry (Solidity ^0.8.19), Thirdweb SDK v5",
+      "storage": "IPFS via Pinata (encrypted blobs)",
+      "payments": "Stripe + KosynUSD (ERC-20)",
+      "transcription": "AssemblyAI (realtime WebSocket)",
+      "testing": "Foundry (contracts), Playwright (e2e)"
+    }
+  },
+  "modules": [
+    {
+      "id": "patient",
+      "name": "Patient Portal",
+      "description": "Patient dashboard, health records, data marketplace, and consultation booking",
+      "color": "#3b82f6",
+      "icon": "Heart",
+      "counts": {
+        "screens": 5,
+        "endpoints": 0,
+        "tables": 0,
+        "implemented": 5,
+        "planned": 0
+      }
+    },
+    {
+      "id": "provider",
+      "name": "Provider Portal",
+      "description": "Provider dashboard, registration, AI-assisted consultations",
+      "color": "#8b5cf6",
+      "icon": "Stethoscope",
+      "counts": {
+        "screens": 3,
+        "endpoints": 0,
+        "tables": 0,
+        "implemented": 3,
+        "planned": 0
+      }
+    },
+    {
+      "id": "consultation",
+      "name": "Consultation",
+      "description": "Live consultation sessions with transcription, consent, and AI analysis",
+      "color": "#f59e0b",
+      "icon": "Radio",
+      "counts": {
+        "screens": 2,
+        "endpoints": 0,
+        "tables": 0,
+        "implemented": 2,
+        "planned": 0
+      }
+    },
+    {
+      "id": "cre",
+      "name": "CRE Workflows",
+      "description": "Chainlink Runtime Environment workflow triggers and mock handlers",
+      "color": "#10b981",
+      "icon": "Shield",
+      "counts": {
+        "screens": 0,
+        "endpoints": 1,
+        "tables": 0,
+        "implemented": 1,
+        "planned": 0
+      }
+    },
+    {
+      "id": "payments",
+      "name": "Payments",
+      "description": "Stripe checkout, webhook processing, KUSD minting",
+      "color": "#ef4444",
+      "icon": "CreditCard",
+      "counts": {
+        "screens": 0,
+        "endpoints": 2,
+        "tables": 0,
+        "implemented": 2,
+        "planned": 0
+      }
+    },
+    {
+      "id": "transcription",
+      "name": "Transcription",
+      "description": "Real-time speech-to-text token endpoints for AssemblyAI, Deepgram, Speechmatics",
+      "color": "#06b6d4",
+      "icon": "Mic",
+      "counts": {
+        "screens": 0,
+        "endpoints": 3,
+        "tables": 0,
+        "implemented": 3,
+        "planned": 0
+      }
+    },
+    {
+      "id": "contracts",
+      "name": "Smart Contracts",
+      "description": "On-chain health record registry, consent, provider registry, KUSD, data marketplace, ACE policies",
+      "color": "#f97316",
+      "icon": "FileCode",
+      "counts": {
+        "screens": 0,
+        "endpoints": 0,
+        "tables": 9,
+        "implemented": 9,
+        "planned": 0
+      }
+    },
+    {
+      "id": "pitch",
+      "name": "Pitch Deck",
+      "description": "Hackathon pitch slideshow",
+      "color": "#64748b",
+      "icon": "Presentation",
+      "counts": {
+        "screens": 1,
+        "endpoints": 0,
+        "tables": 0,
+        "implemented": 1,
+        "planned": 0
+      }
+    }
+  ],
+  "flows": [
+    {
+      "id": "patient-record-upload",
+      "name": "Patient Uploads Health Record",
+      "trigger": "user_action",
+      "priority": "critical",
+      "module": "patient",
+      "outcome": "Record encrypted in TEE, stored on IPFS, hash registered on-chain",
+      "tags": ["record", "encryption", "ipfs", "cre"],
+      "steps": [
+        {
+          "order": 1,
+          "screen": "patient.records",
+          "description": "Patient clicks 'Upload Record' button",
+          "checks": ["Upload button visible", "User authenticated via Thirdweb"]
+        },
+        {
+          "order": 2,
+          "endpoint": "cre.workflow-trigger",
+          "description": "POST /api/cre/record-upload with patient data",
+          "checks": ["Request payload contains patientData"]
+        },
+        {
+          "order": 3,
+          "service": "CRE TEE",
+          "description": "CRE encrypts data with AES-256-GCM inside TEE, uploads to IPFS via Pinata",
+          "checks": ["Encryption happens inside enclave"]
+        },
+        {
+          "order": 4,
+          "contract": "contracts.health-record-registry",
+          "description": "CRE Forwarder calls onReport with opcode 0x00, stores IPFS CID on-chain",
+          "checks": ["RecordUploaded event emitted", "recordCount incremented"]
+        },
+        {
+          "order": 5,
+          "screen": "patient.records",
+          "description": "UI shows success toast, new record appears in grid",
+          "checks": ["Toast shown", "Record card rendered with CID"]
+        }
+      ]
+    },
+    {
+      "id": "provider-registration",
+      "name": "Provider Registers with License Verification",
+      "trigger": "user_action",
+      "priority": "critical",
+      "module": "provider",
+      "outcome": "Provider verified in TEE and registered on-chain",
+      "tags": ["provider", "registration", "cre", "verification"],
+      "steps": [
+        {
+          "order": 1,
+          "screen": "provider.register",
+          "description": "Provider fills registration form (name, specialty, license, fee)",
+          "checks": ["All required fields filled"]
+        },
+        {
+          "order": 2,
+          "endpoint": "cre.workflow-trigger",
+          "description": "POST /api/cre/provider-registration with form data",
+          "checks": [
+            "Request contains name, specialty, jurisdiction, licenseNumber, fee"
+          ]
+        },
+        {
+          "order": 3,
+          "service": "CRE TEE",
+          "description": "CRE verifies license hash inside TEE enclave",
+          "checks": ["Verification runs in confidential compute"]
+        },
+        {
+          "order": 4,
+          "contract": "contracts.provider-registry",
+          "description": "CRE Forwarder calls onReport with opcode 0x03, stores Provider struct",
+          "checks": ["ProviderRegistered event emitted"]
+        },
+        {
+          "order": 5,
+          "screen": "provider.register",
+          "description": "CreFeed shows workflow completion, success toast",
+          "checks": ["All CRE steps shown as done"]
+        }
+      ]
+    },
+    {
+      "id": "consultation-booking",
+      "name": "Patient Books Consultation",
+      "trigger": "user_action",
+      "priority": "high",
+      "module": "patient",
+      "outcome": "Consultation booked and paid via KUSD or Stripe",
+      "tags": ["booking", "payment", "stripe", "kusd"],
+      "steps": [
+        {
+          "order": 1,
+          "screen": "patient.dashboard",
+          "description": "Patient clicks 'Book Consultation'",
+          "checks": ["Button navigates to /book"]
+        },
+        {
+          "order": 2,
+          "screen": "patient.book",
+          "description": "Patient selects doctor from DoctorPicker grid",
+          "checks": ["Doctor card highlighted on selection"]
+        },
+        {
+          "order": 3,
+          "screen": "patient.book",
+          "description": "Patient picks date and time slot from CalendarPicker",
+          "checks": [
+            "Past dates disabled",
+            "Time slots shown after date selection"
+          ]
+        },
+        {
+          "order": 4,
+          "screen": "patient.book",
+          "description": "Patient pays via KUSD (mock) or Stripe checkout",
+          "checks": ["Payment method toggle works", "KUSD shows balance check"]
+        },
+        {
+          "order": 5,
+          "endpoint": "payments.stripe-checkout",
+          "description": "If Stripe: POST /api/stripe/checkout creates session, redirects to Stripe",
+          "checks": ["Stripe session URL returned"]
+        },
+        {
+          "order": 6,
+          "screen": "patient.book",
+          "description": "Confirmation dialog shows booking details",
+          "checks": ["Dialog opens with doctor name"]
+        }
+      ]
+    },
+    {
+      "id": "consultation-session-patient",
+      "name": "Patient Consultation Session",
+      "trigger": "navigation",
+      "priority": "critical",
+      "module": "consultation",
+      "outcome": "Patient approves access, live transcript captured, AI results generated",
+      "tags": ["consultation", "passkey", "transcription", "ai"],
+      "steps": [
+        {
+          "order": 1,
+          "screen": "consultation.patient",
+          "description": "Patient opens consultation page, sees DecryptRequest",
+          "checks": ["Doctor name and requested record types shown"]
+        },
+        {
+          "order": 2,
+          "screen": "consultation.patient",
+          "description": "Patient approves with passkey (WebAuthn verification)",
+          "checks": ["Passkey dialog shown", "usePasskey().verify() succeeds"]
+        },
+        {
+          "order": 3,
+          "screen": "consultation.patient",
+          "description": "CreFeed animates CRE workflow steps (provider-decryption)",
+          "checks": ["Steps progress from pending → done"]
+        },
+        {
+          "order": 4,
+          "screen": "consultation.patient",
+          "description": "LiveTranscript starts — patient speaks, AssemblyAI transcribes",
+          "checks": ["Mic permission granted", "Transcript entries appear"]
+        },
+        {
+          "order": 5,
+          "screen": "consultation.patient",
+          "description": "Transcript completes, AiResults tab shows SOAP note, codes, interactions",
+          "checks": ["All 4 result tabs populated"]
+        }
+      ]
+    },
+    {
+      "id": "consultation-session-provider",
+      "name": "Provider Consultation Session",
+      "trigger": "navigation",
+      "priority": "critical",
+      "module": "consultation",
+      "outcome": "Provider views patient data, captures transcript, gets AI analysis, can edit with AI chat",
+      "tags": ["consultation", "provider", "transcription", "ai"],
+      "steps": [
+        {
+          "order": 1,
+          "screen": "consultation.provider",
+          "description": "Provider opens consultation, sees decrypted patient vitals and LiveTranscript",
+          "checks": ["Patient data card shows vitals", "Mic controls visible"]
+        },
+        {
+          "order": 2,
+          "screen": "consultation.provider",
+          "description": "Provider records consultation or uses Demo mode",
+          "checks": ["Transcript entries accumulate"]
+        },
+        {
+          "order": 3,
+          "endpoint": "cre.workflow-trigger",
+          "description": "Provider clicks 'End Consultation', triggers consultation-processing workflow",
+          "checks": ["POST /api/cre/consultation-processing with transcript"]
+        },
+        {
+          "order": 4,
+          "screen": "consultation.provider",
+          "description": "CreFeed shows processing steps, results phase loads with AI Results + AI Editor tabs",
+          "checks": ["SOAP note generated", "AI chat available"]
+        },
+        {
+          "order": 5,
+          "screen": "consultation.provider",
+          "description": "Provider uses AI Editor to refine notes via Claude Service streaming",
+          "checks": ["Chat messages stream correctly"]
+        }
+      ]
+    },
+    {
+      "id": "data-marketplace-opt-in",
+      "name": "Patient Opts Into Data Marketplace",
+      "trigger": "user_action",
+      "priority": "medium",
+      "module": "patient",
+      "outcome": "Patient's anonymized data listed for research queries, earns KUSD",
+      "tags": ["marketplace", "data", "kusd", "privacy"],
+      "steps": [
+        {
+          "order": 1,
+          "screen": "patient.records",
+          "description": "Patient toggles DataMarketplace switch to opted-in",
+          "checks": ["Switch toggles to on state"]
+        },
+        {
+          "order": 2,
+          "screen": "patient.records",
+          "description": "Patient selects data categories (Vitals, Medications, Lab Results, Diagnoses)",
+          "checks": ["Category badges toggle on/off"]
+        },
+        {
+          "order": 3,
+          "contract": "contracts.data-marketplace",
+          "description": "listData() called with selected record types",
+          "checks": ["DataListed event emitted"]
+        },
+        {
+          "order": 4,
+          "screen": "patient.records",
+          "description": "Earnings display updates with KUSD amount",
+          "checks": ["KUSD balance shown"]
+        }
+      ]
+    },
+    {
+      "id": "stripe-payment-kusd-mint",
+      "name": "Stripe Payment Triggers KUSD Mint",
+      "trigger": "webhook",
+      "priority": "high",
+      "module": "payments",
+      "outcome": "Successful Stripe payment triggers CRE workflow to mint equivalent KUSD tokens",
+      "tags": ["stripe", "webhook", "kusd", "mint", "cre"],
+      "steps": [
+        {
+          "order": 1,
+          "endpoint": "payments.stripe-webhook",
+          "description": "Stripe sends checkout.session.completed webhook",
+          "checks": ["Signature verified with STRIPE_WEBHOOK_SECRET"]
+        },
+        {
+          "order": 2,
+          "endpoint": "cre.workflow-trigger",
+          "description": "triggerWorkflow('payment-mint') called with amount and sessionId",
+          "checks": ["Workflow triggered successfully"]
+        },
+        {
+          "order": 3,
+          "contract": "contracts.kosyn-usd",
+          "description": "CRE Forwarder calls onReport with opcode 0x04, mints KUSD to recipient",
+          "checks": ["KUSDMinted event emitted", "Balance updated"]
+        }
+      ]
+    }
+  ],
+  "infrastructure": {
+    "blockchain": [
+      {
+        "name": "Avalanche Fuji",
+        "chainId": 43113,
+        "rpc": "env:NEXT_PUBLIC_AVAX_FUJI_RPC_URL",
+        "contracts": [
+          {
+            "name": "HealthRecordRegistry",
+            "address": "0x141eE5CE87Dea8B7dCCb1640288e298c34c98984"
+          },
+          {
+            "name": "PatientConsent",
+            "address": "0xe72c15E274D26D61C6A7C0d4c9df75E0Db99d7EA"
+          },
+          {
+            "name": "ProviderRegistry",
+            "address": "0x1ad147D79353187Afe1aC30D70e1b219B14D3c2B"
+          },
+          {
+            "name": "KosynUSD",
+            "address": "0x7BF4384246aaBCFe210e7dAA3378B9365E43F0e4"
+          },
+          {
+            "name": "DataMarketplace",
+            "address": "0x5b8c4e629bcbb131220d5Fd01294bAe921482D5D"
+          }
+        ]
+      }
+    ],
+    "externalAPIs": [
+      {
+        "name": "Claude Service",
+        "baseUrl": "env:CLAUDE_SERVICE_URL",
+        "auth": "X-API-Key header",
+        "purpose": "App-level AI inference (streaming chat)"
+      },
+      {
+        "name": "Stripe",
+        "baseUrl": "https://api.stripe.com",
+        "auth": "STRIPE_SECRET_KEY",
+        "purpose": "Payment checkout sessions and webhook verification"
+      },
+      {
+        "name": "AssemblyAI",
+        "baseUrl": "https://api.assemblyai.com/v2",
+        "auth": "ASSEMBLYAI_API_KEY",
+        "purpose": "Realtime speech-to-text transcription tokens"
+      },
+      {
+        "name": "Pinata (IPFS)",
+        "baseUrl": "https://api.pinata.cloud",
+        "auth": "PINATA_API_KEY + PINATA_SECRET_API_KEY",
+        "purpose": "Encrypted health record blob storage"
+      },
+      {
+        "name": "CRE HTTP Trigger",
+        "baseUrl": "env:NEXT_PUBLIC_CRE_HTTP_TRIGGER_URL",
+        "auth": "CRE native",
+        "purpose": "Chainlink Runtime Environment workflow triggers"
+      }
+    ],
+    "aiServices": [
+      {
+        "name": "Claude Service (Sonnet/Opus)",
+        "provider": "Anthropic via Claude Service proxy",
+        "purpose": "Provider AI chat, clinical note editing",
+        "model": "sonnet (default), opus (complex)"
+      },
+      {
+        "name": "Gemini 2.0 Flash (CRE TEE)",
+        "provider": "Google AI inside CRE enclave",
+        "purpose": "Clinical analysis, SOAP notes, drug interactions — runs only inside TEE",
+        "model": "gemini-2.0-flash"
+      }
+    ],
+    "sharedServices": [
+      {
+        "name": "Thirdweb Connect",
+        "purpose": "Wallet auth (in-app for patients, MetaMask for providers), gas sponsorship, contract reads"
+      },
+      {
+        "name": "WebAuthn Passkeys",
+        "purpose": "Patient identity verification for record decryption consent"
+      },
+      {
+        "name": "CRE Forwarder",
+        "purpose": "On-chain entry point for all CRE workflow results (address from CRE_FORWARDER_ADDRESS env)"
+      }
+    ]
+  },
+  "fileStructure": {
+    "frontend/src/app/page.tsx": "shared.landing",
+    "frontend/src/app/patients/layout.tsx": "shared.patient-layout",
+    "frontend/src/app/patients/dashboard/page.tsx": "patient.dashboard",
+    "frontend/src/app/patients/records/page.tsx": "patient.records",
+    "frontend/src/app/patients/records/new/page.tsx": "patient.records-new",
+    "frontend/src/app/patients/book/page.tsx": "patient.book",
+    "frontend/src/app/patients/consultation/[id]/page.tsx": "consultation.patient",
+    "frontend/src/app/doctors/layout.tsx": "shared.provider-layout",
+    "frontend/src/app/doctors/dashboard/page.tsx": "provider.dashboard",
+    "frontend/src/app/doctors/onboarding/page.tsx": "provider.register",
+    "frontend/src/app/doctors/consultation/[id]/page.tsx": "consultation.provider",
+    "frontend/src/app/pitch/page.tsx": "pitch.slideshow",
+    "frontend/src/components/auth-gate.tsx": "shared.auth-gate",
+    "frontend/src/app/api/cre/[workflow]/route.ts": "cre.workflow-trigger",
+    "frontend/src/app/api/stripe/checkout/route.ts": "payments.stripe-checkout",
+    "frontend/src/app/api/stripe/webhook/route.ts": "payments.stripe-webhook",
+    "frontend/src/app/api/assemblyai/token/route.ts": "transcription.assemblyai-token",
+    "frontend/src/app/api/deepgram/token/route.ts": "transcription.deepgram-token",
+    "frontend/src/app/api/speechmatics/jwt/route.ts": "transcription.speechmatics-jwt",
+    "frontend/src/components/nav-header.tsx": "shared.nav-header",
+    "frontend/src/components/ai-chat.tsx": "shared.ai-chat",
+    "frontend/src/components/ai-results.tsx": "shared.ai-results",
+    "frontend/src/components/live-transcript.tsx": "shared.live-transcript",
+    "frontend/src/components/cre-feed.tsx": "shared.cre-feed",
+    "frontend/src/components/access-log.tsx": "patient.access-log",
+    "frontend/src/components/consultation-list.tsx": "patient.consultation-list",
+    "frontend/src/components/records-list.tsx": "patient.records-list",
+    "frontend/src/components/data-marketplace.tsx": "patient.data-marketplace",
+    "frontend/src/components/doctor-picker.tsx": "patient.doctor-picker",
+    "frontend/src/components/calendar-picker.tsx": "patient.calendar-picker",
+    "frontend/src/components/payment-form.tsx": "patient.payment-form",
+    "frontend/src/components/passkey-decrypt.tsx": "shared.passkey-decrypt",
+    "frontend/src/components/decrypt-request.tsx": "consultation.decrypt-request",
+    "frontend/src/components/provider-register.tsx": "provider.register-form",
+    "frontend/src/lib/ai.ts": "shared.ai-client",
+    "frontend/src/lib/cre.ts": "shared.cre-client",
+    "frontend/src/lib/assemblyai.ts": "shared.assemblyai-client",
+    "frontend/src/lib/passkey.ts": "shared.passkey-lib",
+    "frontend/src/lib/thirdweb.ts": "shared.thirdweb-config",
+    "frontend/src/lib/contracts.ts": "shared.contracts-config",
+    "frontend/src/hooks/use-passkey.ts": "shared.use-passkey",
+    "frontend/src/hooks/use-records.ts": "shared.use-records",
+    "frontend/src/hooks/use-consent.ts": "shared.use-consent",
+    "contracts/src/HealthRecordRegistry.sol": "contracts.health-record-registry",
+    "contracts/src/PatientConsent.sol": "contracts.patient-consent",
+    "contracts/src/ProviderRegistry.sol": "contracts.provider-registry",
+    "contracts/src/KosynUSD.sol": "contracts.kosyn-usd",
+    "contracts/src/DataMarketplace.sol": "contracts.data-marketplace",
+    "contracts/src/ace/PolicyEngine.sol": "contracts.policy-engine",
+    "contracts/src/ace/ProviderAllowlistPolicy.sol": "contracts.provider-allowlist-policy",
+    "contracts/src/ace/AuditPolicy.sol": "contracts.audit-policy",
+    "contracts/src/ace/KosynExtractor.sol": "contracts.kosyn-extractor",
+    "contracts/src/interfaces/ReceiverTemplate.sol": "contracts.receiver-template",
+    "contracts/src/interfaces/IReceiver.sol": "contracts.i-receiver",
+    "contracts/src/interfaces/IPolicyEngine.sol": "contracts.i-policy-engine",
+    "contracts/src/interfaces/IPolicy.sol": "contracts.i-policy",
+    "contracts/src/interfaces/IExtractor.sol": "contracts.i-extractor",
+    "contracts/script/Deploy.s.sol": "contracts.deploy-script",
+    "workflows/record-upload/main.ts": "cre.record-upload-workflow",
+    "workflows/payment-mint/main.ts": "cre.payment-mint-workflow",
+    "workflows/data-marketplace/main.ts": "cre.data-marketplace-workflow"
+  }
+}

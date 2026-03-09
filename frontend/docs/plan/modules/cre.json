@@ -1,0 +1,71 @@
+{
+  "id": "cre",
+  "name": "CRE Workflows",
+  "description": "Chainlink Runtime Environment workflow triggers and mock handlers",
+  "color": "#10b981",
+  "icon": "Shield",
+  "screens": [],
+  "apiEndpoints": [
+    {
+      "id": "cre.workflow-trigger",
+      "name": "CRE Workflow Trigger",
+      "route": "/api/cre/[workflow]",
+      "method": "POST",
+      "status": "implemented",
+      "description": "Dynamic route that triggers CRE workflows. In demo mode (no CRE_HTTP_TRIGGER_URL), returns hardcoded mock responses. In production, forwards to CRE HTTP Trigger.",
+      "auth": "none",
+      "requestBody": {
+        "workflow": "string (URL param: record-upload | consultation-processing | provider-decryption | payment-mint | provider-registration | data-marketplace)",
+        "body": "Record<string, unknown> (workflow-specific payload)"
+      },
+      "responseShape": {
+        "success": "boolean",
+        "txHash": "string (optional, mock 0x-prefixed hash)",
+        "data": "Record<string, unknown> (workflow-specific result)",
+        "error": "string (optional, when success=false)"
+      },
+      "serverFlow": [
+        {
+          "order": 1,
+          "layer": "validation",
+          "description": "Extract workflow name from dynamic route segment"
+        },
+        {
+          "order": 2,
+          "layer": "validation",
+          "description": "Parse request body as JSON"
+        },
+        {
+          "order": 3,
+          "layer": "middleware",
+          "description": "Check DEMO_MODE (true when NEXT_PUBLIC_CRE_HTTP_TRIGGER_URL absent)"
+        },
+        {
+          "order": 4,
+          "layer": "external",
+          "description": "Demo: 500ms delay → return getMockResponse(workflow). Live: POST to CRE HTTP Trigger URL"
+        },
+        {
+          "order": 5,
+          "layer": "response",
+          "description": "Return CREResponse JSON with success, txHash, data"
+        }
+      ],
+      "errorResponses": [
+        {
+          "status": 200,
+          "code": "UNKNOWN_WORKFLOW",
+          "description": "Unknown workflow name",
+          "when": "Workflow name not in known set (success: false)"
+        }
+      ],
+      "calledBy": [
+        "patient.records (record-upload)",
+        "provider.register (provider-registration)",
+        "consultation.provider (consultation-processing)",
+        "payments.stripe-webhook (payment-mint)"
+      ]
+    }
+  ],
+  "dbTables": []
+}

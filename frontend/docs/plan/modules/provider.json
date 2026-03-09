@@ -1,0 +1,412 @@
+{
+  "id": "provider",
+  "name": "Provider Portal",
+  "description": "Provider dashboard, registration, AI-assisted consultations",
+  "color": "#8b5cf6",
+  "icon": "Stethoscope",
+  "screens": [
+    {
+      "id": "provider.dashboard",
+      "name": "Provider Dashboard",
+      "route": "/doctors/dashboard",
+      "status": "implemented",
+      "description": "Provider home with stats, AI chat assistant, and active patient list",
+      "ui": {
+        "layout": "full-width",
+        "sections": [
+          {
+            "type": "stats-grid",
+            "columns": 4,
+            "items": [
+              {
+                "label": "Total Patients",
+                "value": "12",
+                "icon": "Users",
+                "color": "blue-400"
+              },
+              {
+                "label": "Today",
+                "value": "3",
+                "icon": "Stethoscope",
+                "color": "purple-400"
+              },
+              {
+                "label": "In Queue",
+                "value": "1",
+                "icon": "Clock",
+                "color": "amber-400"
+              },
+              {
+                "label": "KUSD Earned",
+                "value": "$450",
+                "icon": "Activity",
+                "color": "emerald-400"
+              }
+            ]
+          },
+          {
+            "type": "card",
+            "id": "ai-chat",
+            "title": "AI Assistant",
+            "component": "AiChat",
+            "description": "Full-height streaming chat interface. Sends prompts to Claude Service (sonnet model). Pre-seeded greeting. Enter to send, Shift+Enter for newline."
+          },
+          {
+            "type": "card-list",
+            "id": "active-patients",
+            "title": "Active Patients",
+            "description": "3 mock patients (John D. active, Maria S. pending, Alex K. completed). Each links to /doctors/consultation/{id}"
+          }
+        ],
+        "actions": [
+          {
+            "label": "Kosyn",
+            "action": "navigate",
+            "target": "/",
+            "description": "App logo with Shield icon — navigates to home page"
+          },
+          {
+            "label": "Dashboard",
+            "action": "navigate",
+            "target": "/doctors/dashboard",
+            "description": "Centered nav link to provider dashboard"
+          },
+          {
+            "label": "Register",
+            "action": "navigate",
+            "target": "/doctors/onboarding",
+            "description": "Centered nav link to provider registration"
+          },
+          {
+            "label": "Connect Wallet",
+            "action": "dialog",
+            "target": "wallet-connect",
+            "description": "Opens Thirdweb Connect wallet modal — MetaMask for providers"
+          },
+          {
+            "label": "0.00",
+            "action": "api-call",
+            "endpoint": "KosynUSD.balanceOf(address)",
+            "description": "KUSD balance fetched from KosynUSD contract via useReadContract — updates on wallet connect and after transactions"
+          },
+          {
+            "label": "KUSD",
+            "action": "label",
+            "description": "Token label next to balance — part of the KusdBadge component in nav header"
+          },
+          {
+            "label": "Deposit",
+            "action": "dialog",
+            "target": "deposit-modal",
+            "description": "Opens deposit modal — fund wallet with KUSD. Dashed emerald border, Plus icon"
+          },
+          {
+            "label": "Sepolia",
+            "action": "api-call",
+            "endpoint": "useActiveWalletChain().id -> CHAIN_META lookup",
+            "description": "Network badge — shows current chain name from wallet connection. Blue dot indicator"
+          },
+          {
+            "label": "0x7458...5B78",
+            "action": "dialog",
+            "target": "wallet-details",
+            "description": "Thirdweb ConnectButton detailsButton — opens wallet details panel for address, network switch, disconnect"
+          },
+          {
+            "label": "View Records",
+            "action": "navigate",
+            "target": "/doctors/consultation/{id}",
+            "description": "Navigate to patient consultation — each patient row links to /doctors/consultation/{consultationId}"
+          }
+        ]
+      },
+      "states": [
+        {
+          "id": "connected",
+          "name": "Connected",
+          "description": "Provider signed in — stats, AI chat, and patient list visible. AuthGate bypassed in dev-preview mode.",
+          "isInitial": true,
+          "mutations": [],
+          "elementDescriptions": {
+            "Kosyn": "App logo text in nav header — links to home page ('/'). Preceded by Shield icon. Always visible.",
+            "Dashboard": "Centered nav link to /doctors/dashboard — highlighted as current page with text-foreground and font-medium.",
+            "Register": "Centered nav link to /doctors/onboarding — navigates to provider registration form. Muted text when not active.",
+            "0.00": "KUSD balance in KusdBadge component — formatted from KosynUSD.balanceOf(address) / 1e18 via useReadContract. Green text (text-emerald-400). Shows '0.00' when balance is zero.",
+            "KUSD": "Token label inside KusdBadge — identifies the token as KosynUSD. Muted foreground text, next to the numeric balance.",
+            "Deposit": "Button in nav header — opens DepositModal overlay for buying KUSD. Dashed emerald border (border-dashed border-emerald-500/40), Plus icon, only rendered when account is connected.",
+            "Sepolia": "Network badge in nav header via NetworkBadge component — chain name from useActiveWalletChain().id mapped via CHAIN_META lookup. Blue dot indicator (bg-blue-500). Only rendered when account and chain are available.",
+            "0x7458...5B78": "Truncated wallet address button in nav header — rendered by Thirdweb ConnectButton detailsButton. Opens wallet details panel on click.",
+            "Provider Dashboard": "Page heading (h1) — centered text-2xl font-bold. Identifies the current page as the provider dashboard.",
+            "AI-assisted clinical intelligence. All data processed inside TEE enclaves.": "Subtitle under page heading — centered text-sm text-muted-foreground. Communicates that AI runs inside CRE TEE enclaves.",
+            "12": "Total Patients stat value — mock count of all registered patients. Bold 2xl text in stat card with Users icon (text-blue-400).",
+            "Total Patients": "Stat card label below '12' value — text-xs text-muted-foreground. Identifies the total patients metric.",
+            "3": "Today stat value — appointments scheduled for today. Bold 2xl text in stat card with Stethoscope icon (text-purple-400).",
+            "Today": "Stat card label below '3' value — text-xs text-muted-foreground. Identifies today's appointment count.",
+            "1": "In Queue stat value — patients waiting for consultation. Bold 2xl text in stat card with Clock icon (text-amber-400).",
+            "In Queue": "Stat card label below '1' value — text-xs text-muted-foreground. Identifies the current queue depth.",
+            "$450": "KUSD Earned stat value — total consultation revenue. Bold 2xl text in stat card with Activity icon (text-emerald-400).",
+            "KUSD Earned": "Stat card label below '$450' value — text-xs text-muted-foreground. Identifies lifetime provider earnings.",
+            "AI Clinical Assistant": "Card title for AI chat section — text-lg with Bot icon. Rendered by AiChat component in lg:col-span-2 (2/3 width).",
+            "Hello, I'm your AI clinical assistant. I can help with SOAP notes, medical coding, drug interactions, and document generation. What would you like to work on?": "Pre-seeded assistant greeting message — shown on initial load in AI chat. Displayed in bg-muted bubble with Bot avatar. Explains capabilities (SOAP notes, coding, interactions, docs).",
+            "Ask about SOAP notes, medical codes, drug interactions...": "Textarea placeholder in AI chat input — guides provider on what to ask. Min-height 40px, Enter to send, Shift+Enter for newline.",
+            "Active Patients": "Card title for patient list sidebar (1/3 width) — text-sm in CardHeader. Lists patients with status badges.",
+            "John D.": "Patient name — from mockPatients array. Links to /doctors/consultation/1. Text-sm in a bordered row with hover:bg-muted/50.",
+            "active": "Status badge for John D. — green variant (bg-green-500/10, text-green-400, border-green-500/20). Indicates ongoing consultation.",
+            "Maria S.": "Patient name — from mockPatients array. Links to /doctors/consultation/2. Text-sm in a bordered row.",
+            "pending": "Status badge for Maria S. — amber variant (bg-amber-500/10, text-amber-400, border-amber-500/20). Indicates awaiting consultation start.",
+            "Alex K.": "Patient name — from mockPatients array. Links to /doctors/consultation/3. Text-sm in a bordered row.",
+            "completed": "Status badge for Alex K. — muted variant (bg-muted, text-muted-foreground). Indicates consultation finished."
+          }
+        }
+      ],
+      "appFlows": [
+        {
+          "id": "provider-ai-chat",
+          "name": "Provider asks AI",
+          "steps": [
+            {
+              "order": 1,
+              "layer": "ui",
+              "description": "Provider types question in AiChat textarea"
+            },
+            {
+              "order": 2,
+              "layer": "api",
+              "description": "chat({ prompt, model: 'sonnet' }) streams POST to Claude Service /chat"
+            },
+            {
+              "order": 3,
+              "layer": "ui",
+              "description": "Tokens stream into assistant message bubble. Falls back to demo on error."
+            }
+          ]
+        },
+        {
+          "id": "provider-open-consultation",
+          "name": "Open patient consultation",
+          "steps": [
+            {
+              "order": 1,
+              "layer": "ui",
+              "description": "Provider clicks patient row"
+            },
+            {
+              "order": 2,
+              "layer": "navigation",
+              "description": "Link navigates to /doctors/consultation/{id}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "provider.register",
+      "name": "Provider Registration",
+      "route": "/doctors/onboarding",
+      "status": "implemented",
+      "description": "Registration form with TEE-verified license check via CRE workflow",
+      "ui": {
+        "layout": "full-width",
+        "sections": [
+          {
+            "type": "form",
+            "id": "registration-form",
+            "component": "ProviderRegister",
+            "fields": [
+              {
+                "name": "Full Name",
+                "type": "text",
+                "placeholder": "Dr. Jane Smith",
+                "required": true
+              },
+              {
+                "name": "Specialty",
+                "type": "select",
+                "options": [
+                  "Internal Medicine",
+                  "Cardiology",
+                  "Dermatology",
+                  "Neurology",
+                  "Pediatrics",
+                  "Psychiatry",
+                  "Orthopedics",
+                  "Oncology"
+                ],
+                "required": true
+              },
+              {
+                "name": "Jurisdiction",
+                "type": "text",
+                "placeholder": "US-CA",
+                "required": true
+              },
+              {
+                "name": "License Number",
+                "type": "text",
+                "placeholder": "A-123456",
+                "required": true
+              },
+              {
+                "name": "Consultation Fee",
+                "type": "number",
+                "placeholder": "50",
+                "suffix": "KUSD",
+                "required": true
+              },
+              {
+                "name": "Medical Certificate",
+                "type": "file",
+                "accept": ".pdf,.jpg,.png",
+                "required": false
+              }
+            ]
+          },
+          {
+            "type": "card",
+            "id": "cre-feed",
+            "component": "CreFeed",
+            "description": "CRE workflow steps feed for provider-registration workflow"
+          }
+        ],
+        "actions": [
+          {
+            "label": "Kosyn",
+            "action": "navigate",
+            "target": "/",
+            "description": "App logo with Shield icon — navigates to home page"
+          },
+          {
+            "label": "Dashboard",
+            "action": "navigate",
+            "target": "/doctors/dashboard",
+            "description": "Centered nav link to provider dashboard"
+          },
+          {
+            "label": "Register",
+            "action": "navigate",
+            "target": "/doctors/onboarding",
+            "description": "Centered nav link to provider registration — highlighted as current page"
+          },
+          {
+            "label": "Connect Wallet",
+            "action": "dialog",
+            "target": "wallet-connect",
+            "description": "Opens Thirdweb Connect wallet modal — MetaMask for providers"
+          },
+          {
+            "label": "0.00",
+            "action": "api-call",
+            "endpoint": "KosynUSD.balanceOf(address)",
+            "description": "KUSD balance fetched from KosynUSD contract via useReadContract — updates on wallet connect and after transactions"
+          },
+          {
+            "label": "KUSD",
+            "action": "label",
+            "description": "Token label next to balance — part of the KusdBadge component in nav header"
+          },
+          {
+            "label": "Deposit",
+            "action": "dialog",
+            "target": "deposit-modal",
+            "description": "Opens deposit modal — fund wallet with KUSD. Dashed emerald border, Plus icon"
+          },
+          {
+            "label": "Sepolia",
+            "action": "api-call",
+            "endpoint": "useActiveWalletChain().id -> CHAIN_META lookup",
+            "description": "Network badge — shows current chain name from wallet connection. Blue dot indicator"
+          },
+          {
+            "label": "0x7458...5B78",
+            "action": "dialog",
+            "target": "wallet-details",
+            "description": "Thirdweb ConnectButton detailsButton — opens wallet details panel for address, network switch, disconnect"
+          },
+          {
+            "label": "Register as Provider",
+            "action": "api-call",
+            "endpoint": "POST /api/cre/provider-registration",
+            "description": "Submit form — calls triggerWorkflow('provider-registration', formData). Shows 'Submitting...' while in progress."
+          }
+        ]
+      },
+      "states": [
+        {
+          "id": "connected",
+          "name": "Connected",
+          "description": "Provider signed in — full registration form, CRE workflow feed, and submit button visible. AuthGate bypassed in dev-preview mode.",
+          "isInitial": true,
+          "mutations": [],
+          "elementDescriptions": {
+            "Kosyn": "App logo text in nav header — links to home page ('/'). Preceded by Shield icon. Always visible.",
+            "Dashboard": "Centered nav link to /doctors/dashboard — navigates to provider dashboard. Muted text when not active.",
+            "Register": "Centered nav link to /doctors/onboarding — highlighted as current page with text-foreground and font-medium.",
+            "0.00": "KUSD balance in KusdBadge component — formatted from KosynUSD.balanceOf(address) / 1e18 via useReadContract. Green text (text-emerald-400). Shows '0.00' when balance is zero.",
+            "KUSD": "Token label inside KusdBadge — identifies the token as KosynUSD. Muted foreground text, next to the numeric balance.",
+            "Deposit": "Button in nav header — opens DepositModal overlay for buying KUSD. Dashed emerald border (border-dashed border-emerald-500/40), Plus icon, only rendered when account is connected.",
+            "Sepolia": "Network badge in nav header via NetworkBadge component — chain name from useActiveWalletChain().id mapped via CHAIN_META lookup. Blue dot indicator (bg-blue-500). Only rendered when account and chain are available.",
+            "0x7458...5B78": "Truncated wallet address button in nav header — rendered by Thirdweb ConnectButton detailsButton. Opens wallet details panel on click.",
+            "Provider Registration": "Page heading (h1) — centered text-2xl font-bold. Also appears as card title (text-lg) inside ProviderRegister component with ShieldCheck icon.",
+            "Register as a healthcare provider. Your certificate is verified inside a TEE enclave.": "Subtitle under page heading — centered text-sm text-muted-foreground. Explains TEE enclave verification for certificate privacy.",
+            "Full Name": "Form field label — required text input for provider's full name. Placeholder: 'Dr. Jane Smith'. Inside 2-column grid.",
+            "Specialty": "Form field label — required select dropdown for medical specialty. Options: Internal Medicine, Cardiology, Dermatology, Neurology, Pediatrics, Psychiatry, Orthopedics, Oncology.",
+            "Select specialty": "Placeholder text inside Specialty select dropdown — shown via SelectValue when no specialty is selected yet.",
+            "Jurisdiction": "Form field label — required text input for licensing jurisdiction. Placeholder: 'US-CA'. Identifies the state/country of licensure.",
+            "License Number": "Form field label — required text input for medical license number. Placeholder: 'A-123456'. Used for CRE TEE verification.",
+            "Consultation Fee (KUSD)": "Form field label — required number input for provider's per-consultation fee. Placeholder: '50'. Amount in KUSD tokens.",
+            "Medical Certificate": "Form field label — optional file input for certificate upload. Accepts .pdf, .jpg, .png. Selected file name shown below in text-xs text-muted-foreground.",
+            "Your certificate will be verified inside a CRE TEE enclave. No one — including Kosyn — can see your credentials. Only the verification result is written on-chain.": "Privacy notice inside rounded bg-muted/50 info box — text-xs text-muted-foreground. Explains CRE TEE confidentiality guarantee.",
+            "Register as Provider": "Submit button text — full-width Button with Upload icon. Triggers triggerWorkflow('provider-registration', formData) via POST /api/cre/provider-registration. Shows 'Submitting...' while isSubmitting is true.",
+            "CRE Workflow": "Card title for CRE workflow feed sidebar (1/3 width) — text-sm with Cpu icon (text-primary). Rendered by CreFeed component with workflow='provider-registration'.",
+            "Verifying certificate": "CRE workflow step 1 — label from getWorkflowSteps('provider-registration')[0]. TEE verifies uploaded medical certificate. Status icon transitions: Clock (pending) -> Loader2 spinning (processing) -> CheckCircle2 (done).",
+            "Registering on-chain": "CRE workflow step 2 — label from getWorkflowSteps('provider-registration')[1]. Writes verified provider to ProviderRegistry contract. Status icon transitions: Clock (pending) -> Loader2 spinning (processing) -> CheckCircle2 (done)."
+          }
+        }
+      ],
+      "appFlows": [
+        {
+          "id": "register-provider",
+          "name": "Submit provider registration",
+          "steps": [
+            {
+              "order": 1,
+              "layer": "ui",
+              "description": "Provider fills all required fields in form"
+            },
+            {
+              "order": 2,
+              "layer": "ui",
+              "description": "Clicks 'Register as Provider' submit button"
+            },
+            {
+              "order": 3,
+              "layer": "api",
+              "description": "triggerWorkflow('provider-registration', formData) via POST /api/cre/provider-registration"
+            },
+            {
+              "order": 4,
+              "layer": "external",
+              "description": "CRE TEE verifies license hash, registers provider on-chain (opcode 0x03)"
+            },
+            {
+              "order": 5,
+              "layer": "ui",
+              "description": "CreFeed animates steps, toast shows success/error"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "provider.patient-list",
+      "name": "Active Patients (inline)",
+      "route": "/doctors/dashboard",
+      "status": "implemented",
+      "description": "Inline patient list on provider dashboard — not a separate page",
+      "ui": { "layout": "inline", "sections": [] },
+      "appFlows": []
+    }
+  ],
+  "apiEndpoints": [],
+  "dbTables": []
+}

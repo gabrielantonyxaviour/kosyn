@@ -1,0 +1,251 @@
+{
+  "id": "contracts",
+  "name": "Smart Contracts",
+  "description": "On-chain health record registry, consent, provider registry, KUSD, data marketplace, ACE policies",
+  "color": "#f97316",
+  "icon": "FileCode",
+  "screens": [],
+  "apiEndpoints": [],
+  "dbTables": [
+    {
+      "id": "contracts.health-record-registry",
+      "name": "HealthRecordRegistry",
+      "status": "implemented",
+      "address": "0x141eE5CE87Dea8B7dCCb1640288e298c34c98984",
+      "chain": "Sepolia (11155111)",
+      "description": "Central on-chain registry. Receives CRE reports via ReceiverTemplate (forwarder-only). Uses ACE PolicyEngine to gate access grants. Stores IPFS CIDs and metadata only — never PHI.",
+      "inherits": ["ReceiverTemplate"],
+      "opcodes": [
+        "0x00 = record upload",
+        "0x01 = access grant (ACE-gated)",
+        "0x02 = access denial"
+      ],
+      "columns": [
+        {
+          "name": "records",
+          "type": "mapping(uint256 => HealthRecord)",
+          "description": "recordId → { ipfsCid, recordType, uploadTimestamp, lastAccessedAt, isActive, patient }"
+        },
+        {
+          "name": "patientRecords",
+          "type": "mapping(address => uint256[])",
+          "description": "patient address → array of their record IDs"
+        },
+        {
+          "name": "recordAccessLogs",
+          "type": "mapping(uint256 => AccessLog[])",
+          "description": "recordId → array of { provider, timestamp, aiReportHash, granted }"
+        },
+        {
+          "name": "recordCount",
+          "type": "uint256",
+          "description": "Auto-incrementing record ID counter"
+        },
+        {
+          "name": "policyEngine",
+          "type": "IPolicyEngine",
+          "description": "Reference to ACE PolicyEngine for access gate"
+        }
+      ],
+      "events": [
+        "RecordUploaded(uint256 indexed recordId, address indexed patient, uint8 recordType, string ipfsCid)",
+        "AccessGranted(uint256 indexed recordId, address indexed provider, address indexed patient, bytes32 aiReportHash)",
+        "AccessDenied(address indexed provider, address indexed patient, string reason)"
+      ],
+      "functions": [
+        "getPatientRecords(address) → uint256[]",
+        "getRecord(uint256) → HealthRecord",
+        "getAccessLogs(uint256) → AccessLog[]"
+      ]
+    },
+    {
+      "id": "contracts.patient-consent",
+      "name": "PatientConsent",
+      "status": "implemented",
+      "address": "0xe72c15E274D26D61C6A7C0d4c9df75E0Db99d7EA",
+      "chain": "Sepolia (11155111)",
+      "description": "Standalone consent registry. Patients grant/revoke provider access with expiry. Providers emit AccessRequested for CRE Log Trigger. No ReceiverTemplate inheritance.",
+      "inherits": [],
+      "columns": [
+        {
+          "name": "consents",
+          "type": "mapping(address => mapping(address => ConsentGrant))",
+          "description": "patient → provider → { recordType, grantedAt, expiresAt, isActive }"
+        },
+        {
+          "name": "patientProviders",
+          "type": "mapping(address => address[])",
+          "description": "patient → list of providers with consent"
+        }
+      ],
+      "events": [
+        "AccessRequested(address indexed provider, address indexed patient, uint8 recordType)",
+        "ConsentUpdated(address indexed patient, address indexed provider, bool granted)",
+        "AccessGranted(address indexed patient, address indexed provider, uint8 recordType, uint256 duration)",
+        "AccessDenied(address indexed patient, address indexed provider)"
+      ],
+      "functions": [
+        "grantAccess(address provider, uint8 recordType, uint256 duration)",
+        "revokeAccess(address provider)",
+        "requestAccess(address patient, uint8 recordType)",
+        "isProviderAllowed(address patient, address provider) → bool"
+      ]
+    },
+    {
+      "id": "contracts.provider-registry",
+      "name": "ProviderRegistry",
+      "status": "implemented",
+      "address": "0x1ad147D79353187Afe1aC30D70e1b219B14D3c2B",
+      "chain": "Sepolia (11155111)",
+      "description": "Registry of verified healthcare providers. Registration via CRE workflow (opcode 0x03) after off-chain license verification.",
+      "inherits": ["ReceiverTemplate"],
+      "opcodes": ["0x03 = provider registration"],
+      "columns": [
+        {
+          "name": "providers",
+          "type": "mapping(address => Provider)",
+          "description": "address → { name, licenseHash, specialty, jurisdiction, isActive, registeredAt }"
+        },
+        {
+          "name": "providerList",
+          "type": "address[]",
+          "description": "Ordered list of all registered provider addresses"
+        }
+      ],
+      "events": [
+        "ProviderRegistered(address indexed provider, string name, string specialty)",
+        "ProviderDeactivated(address indexed provider)"
+      ],
+      "functions": [
+        "isRegistered(address) → bool",
+        "getProviders() → address[]",
+        "getProvider(address) → Provider"
+      ]
+    },
+    {
+      "id": "contracts.kosyn-usd",
+      "name": "KosynUSD",
+      "status": "implemented",
+      "address": "0x7BF4384246aaBCFe210e7dAA3378B9365E43F0e4",
+      "chain": "Sepolia (11155111)",
+      "description": "ERC-20 stablecoin (6 decimals, symbol KUSD). Minting exclusively via CRE workflow after Stripe payment verification (opcode 0x04). No public mint function.",
+      "inherits": ["ERC20 (OpenZeppelin)", "ReceiverTemplate"],
+      "opcodes": ["0x04 = mint KUSD after Stripe verification"],
+      "columns": [
+        {
+          "name": "balances",
+          "type": "mapping(address => uint256)",
+          "description": "Standard ERC-20 balance mapping (inherited)"
+        },
+        {
+          "name": "totalSupply",
+          "type": "uint256",
+          "description": "Total minted KUSD (inherited)"
+        }
+      ],
+      "events": [
+        "KUSDMinted(address indexed recipient, uint256 amount, bytes32 stripePaymentId)",
+        "Transfer(address indexed from, address indexed to, uint256 value)"
+      ],
+      "functions": [
+        "decimals() → 6",
+        "balanceOf(address) → uint256",
+        "transfer(address, uint256) → bool"
+      ]
+    },
+    {
+      "id": "contracts.data-marketplace",
+      "name": "DataMarketplace",
+      "status": "implemented",
+      "address": "0x5b8c4e629bcbb131220d5Fd01294bAe921482D5D",
+      "chain": "Sepolia (11155111)",
+      "description": "Marketplace for anonymized patient data. Patients list data, requesters pay KUSD for queries. CRE TEE processes queries (opcode 0x05) and distributes payment shares to contributors.",
+      "inherits": ["ReceiverTemplate"],
+      "opcodes": ["0x05 = query fulfillment with payment distribution"],
+      "columns": [
+        {
+          "name": "listings",
+          "type": "mapping(address => DataListing)",
+          "description": "patient → { recordTypes[], isActive }"
+        },
+        {
+          "name": "queries",
+          "type": "mapping(uint256 => Query)",
+          "description": "queryId → { requester, queryParams, payment, fulfilled, resultHash }"
+        },
+        {
+          "name": "queryCount",
+          "type": "uint256",
+          "description": "Auto-incrementing query ID counter"
+        },
+        {
+          "name": "kusd",
+          "type": "KosynUSD",
+          "description": "Reference to KUSD token for payments"
+        }
+      ],
+      "events": [
+        "DataListed(address indexed patient, uint8[] recordTypes)",
+        "DataDelisted(address indexed patient)",
+        "QuerySubmitted(uint256 indexed queryId, address indexed requester, uint256 payment)",
+        "QueryFulfilled(uint256 indexed queryId, bytes32 resultHash)"
+      ],
+      "functions": [
+        "listData(uint8[] recordTypes)",
+        "delistData()",
+        "submitQuery(string queryParams, uint256 payment)"
+      ]
+    },
+    {
+      "id": "contracts.policy-engine",
+      "name": "PolicyEngine (ACE)",
+      "status": "implemented",
+      "description": "Orchestrates multiple IPolicy contracts. Calls IExtractor.extract first, then iterates all policies. Returns false on first failure.",
+      "inherits": ["IPolicyEngine"],
+      "columns": [
+        {
+          "name": "extractor",
+          "type": "IExtractor (immutable)",
+          "description": "KosynExtractor reference"
+        },
+        {
+          "name": "policies",
+          "type": "IPolicy[]",
+          "description": "Ordered list: [ProviderAllowlistPolicy, AuditPolicy]"
+        }
+      ],
+      "functions": ["evaluate(address caller, bytes data) → bool"]
+    },
+    {
+      "id": "contracts.provider-allowlist-policy",
+      "name": "ProviderAllowlistPolicy (ACE)",
+      "status": "implemented",
+      "description": "Enforces provider registration + patient consent for access-grant operations (opcode 0x01). All other opcodes pass through.",
+      "inherits": ["IPolicy"],
+      "columns": [
+        { "name": "providerRegistry", "type": "ProviderRegistry (immutable)" },
+        { "name": "patientConsent", "type": "PatientConsent (immutable)" }
+      ],
+      "functions": ["check(address, bytes data) → bool"]
+    },
+    {
+      "id": "contracts.audit-policy",
+      "name": "AuditPolicy (ACE)",
+      "status": "implemented",
+      "description": "Always returns true but emits AccessAudited event for every access check. Provides compliance audit trail.",
+      "inherits": ["IPolicy"],
+      "events": [
+        "AccessAudited(address indexed caller, uint8 operation, uint256 timestamp)"
+      ],
+      "functions": ["check(address caller, bytes data) → bool (always true)"]
+    },
+    {
+      "id": "contracts.kosyn-extractor",
+      "name": "KosynExtractor (ACE)",
+      "status": "implemented",
+      "description": "Parses raw CRE report bytes into typed opcode + params. report[0] = opcode, report[1:] = params.",
+      "inherits": ["IExtractor"],
+      "functions": ["extract(bytes report) → (uint8 operation, bytes params)"]
+    }
+  ]
+}

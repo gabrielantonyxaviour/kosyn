@@ -1,0 +1,133 @@
+{
+  "id": "transcription",
+  "name": "Transcription",
+  "description": "Real-time speech-to-text token endpoints for AssemblyAI, Deepgram, Speechmatics",
+  "color": "#06b6d4",
+  "icon": "Mic",
+  "screens": [],
+  "apiEndpoints": [
+    {
+      "id": "transcription.assemblyai-token",
+      "name": "AssemblyAI Realtime Token",
+      "route": "/api/assemblyai/token",
+      "method": "POST",
+      "status": "implemented",
+      "description": "Returns a short-lived AssemblyAI realtime transcription token. Falls back to demo token when API key absent.",
+      "auth": "none",
+      "requestBody": {},
+      "responseShape": {
+        "token": "string (AssemblyAI realtime token or 'demo-token-{timestamp}')"
+      },
+      "serverFlow": [
+        {
+          "order": 1,
+          "layer": "middleware",
+          "description": "Read ASSEMBLYAI_API_KEY from env"
+        },
+        {
+          "order": 2,
+          "layer": "validation",
+          "description": "If key absent: return demo token { token: 'demo-token-{Date.now()}' }"
+        },
+        {
+          "order": 3,
+          "layer": "external",
+          "description": "POST https://api.assemblyai.com/v2/realtime/token with { expires_in: 3600 }, Authorization header"
+        },
+        {
+          "order": 4,
+          "layer": "response",
+          "description": "Return { token: response.token }"
+        }
+      ],
+      "errorResponses": [
+        {
+          "status": 500,
+          "code": "ASSEMBLYAI_ERROR",
+          "description": "AssemblyAI API call failed",
+          "when": "Token generation request fails"
+        }
+      ],
+      "calledBy": ["shared.assemblyai-client (getToken())"]
+    },
+    {
+      "id": "transcription.deepgram-token",
+      "name": "Deepgram API Key",
+      "route": "/api/deepgram/token",
+      "method": "POST",
+      "status": "implemented",
+      "description": "Returns raw Deepgram API key to client. Security note: exposes key without auth (hackathon shortcut).",
+      "auth": "none",
+      "requestBody": {},
+      "responseShape": {
+        "apiKey": "string (raw Deepgram API key)"
+      },
+      "serverFlow": [
+        {
+          "order": 1,
+          "layer": "middleware",
+          "description": "Read DEEPGRAM_API_KEY from env"
+        },
+        {
+          "order": 2,
+          "layer": "validation",
+          "description": "If absent: return 500 { error: 'Deepgram API key not configured' }"
+        },
+        {
+          "order": 3,
+          "layer": "response",
+          "description": "Return { apiKey } directly"
+        }
+      ],
+      "errorResponses": [
+        {
+          "status": 500,
+          "code": "NOT_CONFIGURED",
+          "description": "Deepgram API key not configured",
+          "when": "DEEPGRAM_API_KEY env var missing"
+        }
+      ],
+      "calledBy": ["(not currently used — alternative transcription provider)"]
+    },
+    {
+      "id": "transcription.speechmatics-jwt",
+      "name": "Speechmatics JWT",
+      "route": "/api/speechmatics/jwt",
+      "method": "POST",
+      "status": "implemented",
+      "description": "Returns raw Speechmatics API key as 'jwt'. Should use @speechmatics/auth in production.",
+      "auth": "none",
+      "requestBody": {},
+      "responseShape": {
+        "jwt": "string (raw Speechmatics API key)"
+      },
+      "serverFlow": [
+        {
+          "order": 1,
+          "layer": "middleware",
+          "description": "Read SPEECHMATICS_API_KEY from env"
+        },
+        {
+          "order": 2,
+          "layer": "validation",
+          "description": "If absent: return 500 { error: 'Speechmatics API key not configured' }"
+        },
+        {
+          "order": 3,
+          "layer": "response",
+          "description": "Return { jwt: apiKey } directly"
+        }
+      ],
+      "errorResponses": [
+        {
+          "status": 500,
+          "code": "NOT_CONFIGURED",
+          "description": "Speechmatics API key not configured",
+          "when": "SPEECHMATICS_API_KEY env var missing"
+        }
+      ],
+      "calledBy": ["(not currently used — alternative transcription provider)"]
+    }
+  ],
+  "dbTables": []
+}

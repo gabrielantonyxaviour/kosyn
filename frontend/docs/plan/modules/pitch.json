@@ -1,0 +1,108 @@
+{
+  "id": "pitch",
+  "name": "Pitch Deck",
+  "description": "Hackathon pitch slideshow",
+  "color": "#64748b",
+  "icon": "Presentation",
+  "screens": [
+    {
+      "id": "pitch.slideshow",
+      "name": "Pitch Deck Slideshow",
+      "route": "/pitch",
+      "status": "implemented",
+      "description": "6-slide keyboard-navigable pitch deck. Full-screen black background, no NavHeader. Arrow keys + Space for navigation.",
+      "ui": {
+        "layout": "full-screen",
+        "sections": [
+          {
+            "type": "slideshow",
+            "slides": [
+              {
+                "title": "The Problem",
+                "icon": "Lock",
+                "accent": "red-400",
+                "bullets": 4
+              },
+              {
+                "title": "Kosyn AI",
+                "icon": "Shield",
+                "accent": "emerald-400",
+                "bullets": 4
+              },
+              {
+                "title": "Architecture",
+                "icon": "Brain",
+                "accent": "blue-400",
+                "bullets": 4
+              },
+              {
+                "title": "How It Works",
+                "icon": "Shield",
+                "accent": "purple-400",
+                "bullets": 4
+              },
+              {
+                "title": "Business Model",
+                "icon": "Coins",
+                "accent": "amber-400",
+                "bullets": 4
+              },
+              {
+                "title": "Team",
+                "icon": "Users",
+                "accent": "cyan-400",
+                "bullets": 4
+              }
+            ],
+            "navigation": "Prev/Next arrows + dot indicators + keyboard (ArrowRight/Space=next, ArrowLeft=prev)"
+          }
+        ]
+      },
+      "appFlows": [],
+      "states": [
+        {
+          "id": "slide-1",
+          "name": "Slide 1: The Problem",
+          "description": "First slide visible on page load — The Problem",
+          "isInitial": true,
+          "mutations": [],
+          "elementDescriptions": {
+            "The Problem": "Slide 1 title — introduces the healthcare data problem being solved",
+            "Health data is scattered across siloed EHR systems": "Slide 1, bullet 1 — describes data fragmentation across Electronic Health Record systems",
+            "Patients have zero control over who accesses their records": "Slide 1, bullet 2 — highlights lack of patient data sovereignty",
+            "AI analysis of medical data requires exposing raw PHI": "Slide 1, bullet 3 — the privacy paradox of AI in healthcare",
+            "No incentive for patients to contribute to medical research": "Slide 1, bullet 4 — missing economic incentive layer",
+            "Kosyn AI": "Top-left brand logo/label — appears on every slide. Also the title of Slide 2",
+            "1 / 6": "Top-right slide counter — computed from `{current + 1} / {slides.length}` React state. Updates on arrow key press or dot click navigation",
+            "Confidential Health Intelligence Protocol": "Slide 2, bullet 1 — Kosyn's tagline and mission statement",
+            "Patients own their health data with passkey encryption": "Slide 2, bullet 2 — patient data ownership via WebAuthn passkeys",
+            "AI analyzes records inside TEE enclaves — no one sees raw data": "Slide 2, bullet 3 — TEE-based AI analysis for privacy",
+            "Earn from anonymized data marketplace": "Slide 2, bullet 4 — patient economic incentive via KUSD earnings",
+            "Architecture": "Slide 3 title — technical architecture overview",
+            "Chainlink CRE: Confidential HTTP + Vault DON + EVM Read/Write": "Slide 3, bullet 1 — CRE runtime capabilities used",
+            "ACE PolicyEngine: On-chain HIPAA-equivalent access controls": "Slide 3, bullet 2 — smart contract access control layer",
+            "Gemini 2.0 Flash inside TEE: SOAP notes, medical codes, risk scoring": "Slide 3, bullet 3 — AI model running inside TEE for clinical analysis",
+            "IPFS: Encrypted blobs only — never raw PHI on-chain": "Slide 3, bullet 4 — storage layer for encrypted health data",
+            "How It Works": "Slide 4 title — step-by-step flow of the protocol",
+            "1. Patient stores records — encrypted in TEE, hash on-chain": "Slide 4, step 1 — record upload and encryption flow",
+            "2. Doctor requests access — patient approves with passkey": "Slide 4, step 2 — consent-based access request flow",
+            "3. TEE decrypts, AI analyzes, results re-encrypted": "Slide 4, step 3 — confidential AI analysis inside enclave",
+            "4. SOAP notes + medical codes generated inside enclave": "Slide 4, step 4 — clinical output generation",
+            "Business Model": "Slide 5 title — revenue and tokenomics overview",
+            "KUSD stablecoin for consultation payments": "Slide 5, bullet 1 — KosynUSD as payment token for medical consultations",
+            "Data marketplace: patients earn from anonymized data": "Slide 5, bullet 2 — patient earnings from data marketplace participation",
+            "Provider subscriptions for AI clinical tools": "Slide 5, bullet 3 — B2B revenue from healthcare providers",
+            "Protocol fees on data marketplace queries": "Slide 5, bullet 4 — protocol-level fees on data marketplace transactions",
+            "Team": "Slide 6 title — team and hackathon information",
+            "Built for Chainlink Convergence Hackathon": "Slide 6, bullet 1 — hackathon context",
+            "Tracks: Privacy + AI + DeFi": "Slide 6, bullet 2 — hackathon tracks entered",
+            "Full-stack: Smart contracts, CRE workflows, Next.js": "Slide 6, bullet 3 — tech stack summary",
+            "github.com/gabrielaxy/kosyn-ai": "Slide 6, bullet 4 — GitHub repository link"
+          }
+        }
+      ]
+    }
+  ],
+  "apiEndpoints": [],
+  "dbTables": []
+}

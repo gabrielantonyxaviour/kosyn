@@ -1,6 +1,11 @@
 /**
  * Shared utilities for CRE workflows.
+ *
+ * IMPORTANT: All crypto uses @noble libraries (pure JS) — NOT crypto.subtle.
+ * The CRE simulator WASM sandbox has no Web Crypto API, no atob/btoa, no crypto global.
  */
+import { p256 } from "@noble/curves/nist.js";
+import { gcm } from "@noble/ciphers/aes.js";
 
 const BASE64_CHARS =
   "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
@@ -82,7 +87,7 @@ export function parseNillionResponseWithProof(raw: string): {
   }
 }
 
-// ---- TEE Encryption / Decryption -------------------------------------------
+// ---- TEE Encryption / Decryption (noble — no crypto.subtle) -----------------
 
 /** Decode a base64 string to bytes (no atob dependency in CRE runtime). */
 export function base64ToBytes(b64: string): Uint8Array {
@@ -109,132 +114,100 @@ export function base64ToBytes(b64: string): Uint8Array {
   return bytes;
 }
 
+/** Decode a base64url string (JWK format) to bytes. */
+function base64UrlToBytes(s: string): Uint8Array {
+  let b64 = s.replace(/-/g, "+").replace(/_/g, "/");
+  while (b64.length % 4) b64 += "=";
+  return base64ToBytes(b64);
+}
+
+/**
+ * ECDH key agreement using noble P-256.
+ * Takes a JWK private key and a JWK public key, returns the raw x-coordinate
+ * of the shared point (32 bytes) — identical to Web Crypto's deriveKey(ECDH → AES-GCM 256).
+ */
+function ecdhDeriveKey(
+  privJwk: { d?: string },
+  pubJwk: { x?: string; y?: string },
+): Uint8Array {
+  if (!privJwk.d) throw new Error("Private JWK missing 'd' field");
+  if (!pubJwk.x || !pubJwk.y)
+    throw new Error("Public JWK missing 'x' or 'y' field");
+
+  const privD = base64UrlToBytes(privJwk.d);
+  const pubX = base64UrlToBytes(pubJwk.x);
+  const pubY = base64UrlToBytes(pubJwk.y);
+
+  // Build uncompressed public key: 04 || x || y
+  const pubRaw = new Uint8Array(65);
+  pubRaw[0] = 0x04;
+  pubRaw.set(pubX, 1);
+  pubRaw.set(pubY, 33);
+
+  // ECDH: shared point (compressed = 02/03 || x)
+  const shared = p256.getSharedSecret(privD, pubRaw);
+  // x-coordinate = AES-256-GCM key (matches Web Crypto's deriveKey)
+  return shared.slice(1, 33);
+}
+
 /**
  * Decrypt data encrypted with encryptForTee() using the CRE private key.
  *
- * Accepts the base64 bundle `{ ephemeralPubKey, iv, ct }` and the
- * CRE ECDH private key as a base64-encoded JWK string.
- * Uses ECDH to derive the shared AES-256-GCM key, then decrypts.
+ * Uses pure JS ECDH (noble P-256) + AES-256-GCM (noble ciphers).
+ * No crypto.subtle — works inside CRE simulator WASM sandbox.
  *
  * Runs inside CRE TEE — raw plaintext never leaves the enclave.
  */
-export async function decryptInTee(
-  bundle: string,
-  privKeyB64: string,
-): Promise<string> {
+export function decryptInTee(bundle: string, privKeyB64: string): string {
   const decoded = new TextDecoder().decode(base64ToBytes(bundle));
   const { ephemeralPubKey, iv, ct } = JSON.parse(decoded) as {
-    ephemeralPubKey: JsonWebKey;
+    ephemeralPubKey: { x?: string; y?: string };
     iv: number[];
     ct: number[];
   };
 
   const privJwk = JSON.parse(
     new TextDecoder().decode(base64ToBytes(privKeyB64)),
-  ) as JsonWebKey;
+  ) as { d?: string };
 
-  const privKey = await crypto.subtle.importKey(
-    "jwk",
-    privJwk,
-    { name: "ECDH", namedCurve: "P-256" },
-    false,
-    ["deriveKey"],
-  );
-
-  const ephPubKey = await crypto.subtle.importKey(
-    "jwk",
-    ephemeralPubKey,
-    { name: "ECDH", namedCurve: "P-256" },
-    false,
-    [],
-  );
-
-  const sharedKey = await crypto.subtle.deriveKey(
-    { name: "ECDH", public: ephPubKey },
-    privKey,
-    { name: "AES-GCM", length: 256 },
-    false,
-    ["decrypt"],
-  );
-
-  const plainBytes = await crypto.subtle.decrypt(
-    { name: "AES-GCM", iv: new Uint8Array(iv) },
-    sharedKey,
-    new Uint8Array(ct),
-  );
-
+  const aesKey = ecdhDeriveKey(privJwk, ephemeralPubKey);
+  const aes = gcm(aesKey, new Uint8Array(iv));
+  const plainBytes = aes.decrypt(new Uint8Array(ct));
   return new TextDecoder().decode(plainBytes);
 }
 
 /**
  * Unwrap an ECDH-wrapped AES-256-GCM key using the CRE private key.
  * Mirrors wrapKeyForMarketplace() from frontend/src/lib/crypto.ts.
- * Returns a CryptoKey ready for decryptBlob().
+ * Returns raw 32-byte AES key as Uint8Array.
  */
-export async function unwrapKeyFromMarketplace(
+export function unwrapKeyFromMarketplace(
   wrappedBundle: string,
   recipientPrivKeyJwkB64: string,
-): Promise<CryptoKey> {
+): Uint8Array {
   const decoded = new TextDecoder().decode(base64ToBytes(wrappedBundle));
   const { ephemeralPubKey, iv, ct } = JSON.parse(decoded) as {
-    ephemeralPubKey: JsonWebKey;
+    ephemeralPubKey: { x?: string; y?: string };
     iv: number[];
     ct: number[];
   };
 
   const privJwk = JSON.parse(
     new TextDecoder().decode(base64ToBytes(recipientPrivKeyJwkB64)),
-  ) as JsonWebKey;
+  ) as { d?: string };
 
-  const privKey = await crypto.subtle.importKey(
-    "jwk",
-    privJwk,
-    { name: "ECDH", namedCurve: "P-256" },
-    false,
-    ["deriveKey"],
-  );
-
-  const ephPubKey = await crypto.subtle.importKey(
-    "jwk",
-    ephemeralPubKey,
-    { name: "ECDH", namedCurve: "P-256" },
-    false,
-    [],
-  );
-
-  const wrappingKey = await crypto.subtle.deriveKey(
-    { name: "ECDH", public: ephPubKey },
-    privKey,
-    { name: "AES-GCM", length: 256 },
-    false,
-    ["decrypt"],
-  );
-
-  const rawBytes = await crypto.subtle.decrypt(
-    { name: "AES-GCM", iv: new Uint8Array(iv) },
-    wrappingKey,
-    new Uint8Array(ct),
-  );
-
-  return crypto.subtle.importKey(
-    "raw",
-    rawBytes,
-    { name: "AES-GCM", length: 256 },
-    false,
-    ["decrypt"],
-  );
+  const wrappingKey = ecdhDeriveKey(privJwk, ephemeralPubKey);
+  const aes = gcm(wrappingKey, new Uint8Array(iv));
+  return aes.decrypt(new Uint8Array(ct));
 }
 
 /** AES-256-GCM decrypt an encrypted blob back to plaintext JSON. */
-export async function decryptBlob(
+export function decryptBlob(
   blob: { iv: number[]; ct: number[] },
-  key: CryptoKey,
-): Promise<string> {
-  const pt = await crypto.subtle.decrypt(
-    { name: "AES-GCM", iv: new Uint8Array(blob.iv) },
-    key,
-    new Uint8Array(blob.ct),
-  );
+  key: Uint8Array,
+): string {
+  const aes = gcm(key, new Uint8Array(blob.iv));
+  const pt = aes.decrypt(new Uint8Array(blob.ct));
   return new TextDecoder().decode(pt);
 }
 

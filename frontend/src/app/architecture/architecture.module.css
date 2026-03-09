@@ -1,0 +1,819 @@
+/* =====================================================
+   KOSYN AI — ARCHITECTURE PAGE
+   Style: Pure Black & White Cinematic (matches /pitch)
+   ===================================================== */
+
+.root {
+  background: #000;
+  color: #fff;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+.grain {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 100;
+  opacity: 0.04;
+  mix-blend-mode: screen;
+}
+
+.scanLine {
+  position: fixed;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.04);
+  pointer-events: none;
+  z-index: 101;
+  animation: scanDown 9s linear infinite;
+}
+
+@keyframes scanDown {
+  0% {
+    transform: translateY(-10px);
+  }
+  100% {
+    transform: translateY(100vh);
+  }
+}
+
+/* =====================================================
+   NAV
+   ===================================================== */
+
+.nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+}
+
+.navLogo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-mono-custom);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: #666;
+}
+
+.navLinks {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.navLink {
+  font-family: var(--font-mono-custom);
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  color: #666;
+  text-decoration: none;
+  text-transform: uppercase;
+  transition: color 0.2s ease;
+}
+
+.navLink:hover {
+  color: #bbb;
+}
+
+/* =====================================================
+   SHARED LAYOUT
+   ===================================================== */
+
+.inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: clamp(2rem, 5vw, 5rem);
+}
+
+.section {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  padding: 6rem 0;
+}
+
+/* =====================================================
+   HERO
+   ===================================================== */
+
+.hero {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  padding-top: 5rem;
+}
+
+.eyebrow {
+  font-family: var(--font-mono-custom);
+  font-size: clamp(9px, 0.85vw, 11px);
+  letter-spacing: 0.2em;
+  color: #666;
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: clamp(1.5rem, 3vh, 3rem);
+}
+
+.heroTitle {
+  font-family: var(--font-display);
+  font-size: clamp(56px, 8vw, 130px);
+  line-height: 0.88;
+  letter-spacing: -0.01em;
+  color: #fff;
+  margin-bottom: clamp(1.5rem, 3vh, 3rem);
+}
+
+.heroSub {
+  font-family: var(--font-mono-custom);
+  font-size: clamp(12px, 1.2vw, 16px);
+  color: #999;
+  line-height: 1.7;
+  max-width: 700px;
+  margin-bottom: clamp(2rem, 4vh, 4rem);
+}
+
+.trackBadges {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.badge {
+  font-family: var(--font-mono-custom);
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  color: #aaa;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 0.35rem 0.75rem;
+  text-transform: uppercase;
+}
+
+/* =====================================================
+   SECTION ATOMS
+   ===================================================== */
+
+.sectionNum {
+  font-family: var(--font-display);
+  font-size: clamp(72px, 10vw, 160px);
+  line-height: 0.85;
+  color: rgba(255, 255, 255, 0.04);
+  letter-spacing: -0.03em;
+  margin-bottom: -0.5rem;
+  user-select: none;
+}
+
+.sectionTitle {
+  font-family: var(--font-display);
+  font-size: clamp(36px, 5vw, 80px);
+  line-height: 0.92;
+  color: #fff;
+  letter-spacing: -0.01em;
+  margin-bottom: clamp(1.5rem, 3vh, 2.5rem);
+}
+
+.dim {
+  color: #444;
+}
+
+.sectionLead {
+  font-family: var(--font-mono-custom);
+  font-size: clamp(12px, 1.1vw, 15px);
+  color: #999;
+  line-height: 1.75;
+  max-width: 780px;
+  margin-bottom: clamp(2rem, 4vh, 4rem);
+}
+
+.sectionLead strong {
+  color: #ddd;
+  font-weight: 500;
+}
+
+.sectionLead code {
+  font-family: var(--font-mono-custom);
+  font-size: 0.9em;
+  color: #aaa;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 0 4px;
+}
+
+/* =====================================================
+   CODE BLOCK
+   ===================================================== */
+
+.codeBlock {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  margin-bottom: clamp(1.5rem, 3vh, 2.5rem);
+  overflow: hidden;
+}
+
+.codeHeader {
+  font-family: var(--font-mono-custom);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  color: #777;
+  background: rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 0.6rem 1rem;
+  text-transform: uppercase;
+}
+
+.code {
+  font-family: var(--font-mono-custom);
+  font-size: clamp(10px, 0.9vw, 13px);
+  color: #888;
+  line-height: 1.65;
+  padding: 1.25rem 1.25rem;
+  margin: 0;
+  overflow-x: auto;
+  white-space: pre;
+}
+
+/* =====================================================
+   CALLOUT
+   ===================================================== */
+
+.callout {
+  font-family: var(--font-mono-custom);
+  font-size: clamp(10px, 0.95vw, 13px);
+  color: #777;
+  line-height: 1.6;
+  border-left: 2px solid rgba(255, 255, 255, 0.15);
+  padding-left: 1rem;
+  max-width: 680px;
+}
+
+.callout code {
+  font-family: var(--font-mono-custom);
+  color: #aaa;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 0 3px;
+}
+
+/* =====================================================
+   SECTION 01 — FLOW DIAGRAM
+   ===================================================== */
+
+.flowDiagram {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin-bottom: clamp(1.5rem, 3vh, 2.5rem);
+  flex-wrap: wrap;
+}
+
+.flowItem {
+  display: flex;
+  align-items: center;
+}
+
+.flowNode {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.015);
+  padding: clamp(0.75rem, 1.5vw, 1.25rem);
+  min-width: 160px;
+  position: relative;
+}
+
+.flowNodeHi {
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.teeTag {
+  font-family: var(--font-mono-custom);
+  font-size: 7px;
+  letter-spacing: 0.14em;
+  color: #aaa;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 2px 5px;
+  display: inline-block;
+  margin-bottom: 0.4rem;
+  text-transform: uppercase;
+}
+
+.flowLabel {
+  font-family: var(--font-mono-custom);
+  font-size: clamp(9px, 0.85vw, 11px);
+  color: #ccc;
+  letter-spacing: 0.1em;
+  white-space: pre-line;
+  margin-bottom: 0.35rem;
+  text-transform: uppercase;
+}
+
+.flowSub {
+  font-family: var(--font-mono-custom);
+  font-size: clamp(8px, 0.7vw, 10px);
+  color: #777;
+  line-height: 1.5;
+  white-space: pre-line;
+}
+
+.flowArrow {
+  font-family: var(--font-mono-custom);
+  font-size: 14px;
+  color: #555;
+  padding: 0 0.5rem;
+  flex-shrink: 0;
+}
+
+/* =====================================================
+   SECTION 02 — ATTESTATION CHAIN
+   ===================================================== */
+
+.attestChain {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-bottom: clamp(1.5rem, 3vh, 2.5rem);
+  max-width: 600px;
+}
+
+.attestStep {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  position: relative;
+  flex-direction: column;
+}
+
+.attestNum {
+  font-family: var(--font-mono-custom);
+  font-size: 9px;
+  color: #555;
+  letter-spacing: 0.1em;
+  padding-top: 0.75rem;
+  flex-shrink: 0;
+}
+
+.attestContent {
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 0.75rem 1rem;
+  flex: 1;
+}
+
+.attestLabel {
+  font-family: var(--font-mono-custom);
+  font-size: clamp(10px, 1vw, 13px);
+  color: #ccc;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 0.25rem;
+}
+
+.attestSub {
+  font-family: var(--font-mono-custom);
+  font-size: clamp(9px, 0.8vw, 11px);
+  color: #777;
+  line-height: 1.5;
+}
+
+.attestArrow {
+  font-family: var(--font-mono-custom);
+  font-size: 12px;
+  color: #444;
+  padding-left: 1rem;
+  align-self: center;
+}
+
+/* =====================================================
+   SECTION 03 — ACE POLICY CHAIN
+   ===================================================== */
+
+.policyChain {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  margin-bottom: clamp(1.5rem, 3vh, 2.5rem);
+  flex-wrap: wrap;
+}
+
+.policyItem {
+  display: flex;
+  align-items: center;
+}
+
+.policyGate {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.015);
+  padding: clamp(0.75rem, 1.5vw, 1.25rem);
+  min-width: 160px;
+  max-width: 200px;
+}
+
+.policyReg {
+  font-family: var(--font-mono-custom);
+  font-size: 8px;
+  color: #aaa;
+  letter-spacing: 0.12em;
+  margin-bottom: 0.4rem;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  display: inline-block;
+  padding: 2px 5px;
+}
+
+.policyId {
+  font-family: var(--font-mono-custom);
+  font-size: clamp(8px, 0.8vw, 10px);
+  color: #bbb;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 0.35rem;
+}
+
+.policyDesc {
+  font-family: var(--font-mono-custom);
+  font-size: clamp(8px, 0.7vw, 9px);
+  color: #777;
+  line-height: 1.5;
+}
+
+.policyArrow {
+  font-family: var(--font-mono-custom);
+  font-size: 14px;
+  color: #555;
+  padding: 0 0.5rem;
+  flex-shrink: 0;
+}
+
+.exampleBox {
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.015);
+  padding: clamp(1rem, 2vw, 1.75rem);
+  max-width: 580px;
+  margin-bottom: clamp(1.5rem, 3vh, 2.5rem);
+}
+
+.exampleLabel {
+  font-family: var(--font-mono-custom);
+  font-size: 8px;
+  letter-spacing: 0.15em;
+  color: #777;
+  text-transform: uppercase;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 0.6rem;
+}
+
+.exampleRow {
+  display: flex;
+  gap: 1rem;
+  align-items: baseline;
+  margin-bottom: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.exKey {
+  font-family: var(--font-mono-custom);
+  font-size: clamp(9px, 0.8vw, 11px);
+  color: #666;
+  flex-shrink: 0;
+  min-width: 160px;
+}
+
+.exVal {
+  font-family: var(--font-mono-custom);
+  font-size: clamp(9px, 0.8vw, 11px);
+  color: #aaa;
+}
+
+.exBlocked {
+  font-family: var(--font-mono-custom);
+  font-size: clamp(9px, 0.8vw, 11px);
+  color: #cc6666;
+}
+
+/* =====================================================
+   SECTION 04 — HIPAA BITMASK GRID
+   ===================================================== */
+
+.bitmaskGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: clamp(0.5rem, 1vw, 1rem);
+  margin-bottom: clamp(1.5rem, 3vh, 2.5rem);
+}
+
+.bitmaskBit {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.015);
+  padding: clamp(0.875rem, 1.5vw, 1.5rem);
+}
+
+.bitmaskHex {
+  font-family: var(--font-display);
+  font-size: clamp(36px, 4vw, 64px);
+  color: rgba(255, 255, 255, 0.3);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  margin-bottom: 0.5rem;
+}
+
+.bitmaskFlag {
+  font-family: var(--font-mono-custom);
+  font-size: clamp(8px, 0.75vw, 10px);
+  color: #bbb;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 0.3rem;
+}
+
+.bitmaskReg {
+  font-family: var(--font-mono-custom);
+  font-size: clamp(8px, 0.7vw, 9px);
+  color: #aaa;
+  letter-spacing: 0.08em;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  display: inline-block;
+  padding: 2px 5px;
+}
+
+/* =====================================================
+   SECTION 05 — CONSENSUS DIAGRAM
+   ===================================================== */
+
+.consensusDiagram {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  margin-bottom: clamp(1.5rem, 3vh, 2.5rem);
+  max-width: 600px;
+}
+
+.consensusNodes {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.consensusNode {
+  font-family: var(--font-mono-custom);
+  font-size: clamp(8px, 0.75vw, 10px);
+  color: #aaa;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.03);
+  padding: 0.75rem 0.5rem;
+  text-align: center;
+}
+
+.consensusDownArrows {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  width: 100%;
+  gap: 0.5rem;
+}
+
+.cArrow {
+  font-family: var(--font-mono-custom);
+  font-size: 12px;
+  color: #555;
+  text-align: center;
+  padding: 0.25rem 0;
+}
+
+.consensusPinata {
+  font-family: var(--font-mono-custom);
+  font-size: clamp(8px, 0.8vw, 10px);
+  color: #888;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.03);
+  padding: 0.75rem 2rem;
+  text-align: center;
+  width: 100%;
+}
+
+.consensusCheck {
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.02);
+  padding: 1rem;
+  margin-top: 0.5rem;
+}
+
+.cCheckLabel {
+  font-family: var(--font-mono-custom);
+  font-size: 8px;
+  letter-spacing: 0.14em;
+  color: #666;
+  text-transform: uppercase;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.cCheckRows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-bottom: 0.75rem;
+}
+
+.cCheckRow {
+  font-family: var(--font-mono-custom);
+  font-size: clamp(9px, 0.8vw, 11px);
+  color: #6aaa6a;
+  letter-spacing: 0.06em;
+}
+
+.cCheckResult {
+  font-family: var(--font-mono-custom);
+  font-size: clamp(8px, 0.75vw, 10px);
+  color: #7ac47a;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 0.6rem;
+}
+
+/* =====================================================
+   SECTION 06 — ECDH FLOW
+   ===================================================== */
+
+.ecdhFlow {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin-bottom: clamp(1.5rem, 3vh, 2.5rem);
+  flex-wrap: wrap;
+}
+
+.ecdhItem {
+  display: flex;
+  align-items: center;
+}
+
+.ecdhNode {
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.015);
+  padding: clamp(0.6rem, 1.2vw, 1rem);
+  min-width: 130px;
+  max-width: 160px;
+}
+
+.ecdhLabel {
+  font-family: var(--font-mono-custom);
+  font-size: clamp(8px, 0.75vw, 10px);
+  color: #ccc;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 0.25rem;
+  line-height: 1.3;
+}
+
+.ecdhSub {
+  font-family: var(--font-mono-custom);
+  font-size: clamp(7px, 0.65vw, 9px);
+  color: #777;
+  line-height: 1.45;
+}
+
+.ecdhArrow {
+  font-family: var(--font-mono-custom);
+  font-size: 12px;
+  color: #555;
+  padding: 0 0.4rem;
+  flex-shrink: 0;
+}
+
+/* =====================================================
+   FOOTER
+   ===================================================== */
+
+.footerSection {
+  min-height: 50vh;
+  display: flex;
+  align-items: center;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.footerTitle {
+  font-family: var(--font-display);
+  font-size: clamp(52px, 7vw, 110px);
+  line-height: 0.88;
+  color: #fff;
+  letter-spacing: -0.01em;
+  margin-bottom: clamp(1rem, 2vh, 2rem);
+}
+
+.footerSub {
+  font-family: var(--font-mono-custom);
+  font-size: clamp(10px, 0.9vw, 12px);
+  color: #666;
+  letter-spacing: 0.08em;
+  margin-bottom: clamp(2rem, 4vh, 4rem);
+}
+
+.footerLinks {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.footerBtn {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.875rem 2rem;
+  background: #fff;
+  color: #000;
+  font-family: var(--font-mono-custom);
+  font-size: clamp(9px, 0.85vw, 11px);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-decoration: none;
+  font-weight: 500;
+  transition: opacity 0.2s ease;
+}
+
+.footerBtn:hover {
+  opacity: 0.85;
+}
+
+.footerBtnOutline {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.875rem 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #555;
+  font-family: var(--font-mono-custom);
+  font-size: clamp(9px, 0.85vw, 11px);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition:
+    color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.footerBtnOutline:hover {
+  color: #aaa;
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* =====================================================
+   RESPONSIVE
+   ===================================================== */
+
+@media (max-width: 900px) {
+  .bitmaskGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .policyChain {
+    flex-direction: column;
+  }
+  .policyArrow {
+    transform: rotate(90deg);
+    padding: 0.25rem 0;
+    align-self: flex-start;
+    padding-left: 1.5rem;
+  }
+  .flowDiagram {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .flowArrow {
+    transform: rotate(90deg);
+    padding: 0.2rem 0;
+  }
+  .ecdhFlow {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .ecdhArrow {
+    transform: rotate(90deg);
+    padding: 0.2rem 0;
+  }
+}
+
+@media (max-width: 600px) {
+  .bitmaskGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scanLine {
+    animation: none;
+  }
+}

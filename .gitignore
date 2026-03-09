@@ -9,7 +9,9 @@ data/*.db
 data/*.db-wal
 data/*.db-shm
 .playwright-data/
-.claude/reports/
+.claude/
+CLAUDE.md
+skills-lock.json
 .mcp.json
 
 # Dev tooling (local only)
@@ -21,6 +23,10 @@ docs/plan/
 e2e/framework/
 .DS_Store
 .playwright-mcp/
+
+submission
+template/
+plan-viewer.png
 
 # Foundry
 cache/

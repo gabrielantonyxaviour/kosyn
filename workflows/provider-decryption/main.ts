@@ -127,10 +127,10 @@ const MARKETPLACE_ABI = [
  * - Data marketplace gets a de-identified version produced INSIDE the TEE
  * - Raw PHI never leaves the enclave — only de-identified data is output
  */
-const onLogTrigger = (
+const onLogTrigger = async (
   runtime: Runtime<Config>,
   log: EVMLog,
-): Record<string, never> => {
+): Promise<Record<string, never>> => {
   const patientHex = bytesToHex(log.topics[1]);
   const providerHex = bytesToHex(log.topics[2]);
 
@@ -261,21 +261,10 @@ const onLogTrigger = (
   }
 
   // Unwrap the patient's AES key inside TEE
-  let dataKey: CryptoKey | null = null;
+  let dataKey: Uint8Array | null = null;
   if (wrappedBundle) {
     try {
-      let result: CryptoKey | undefined;
-      let err: unknown;
-      unwrapKeyFromMarketplace(wrappedBundle, crePrivKey)
-        .then((k) => {
-          result = k;
-        })
-        .catch((e) => {
-          err = e;
-        });
-      if (err) throw err;
-      if (!result) throw new Error("Key unwrap did not resolve");
-      dataKey = result;
+      dataKey = unwrapKeyFromMarketplace(wrappedBundle, crePrivKey);
       runtime.log("Patient AES key unwrapped inside TEE");
     } catch {
       runtime.log("Key unwrap failed — will still grant access without de-id");
@@ -377,17 +366,7 @@ const onLogTrigger = (
       const blob = JSON.parse(encryptedRecord) as EncryptedBlobShape;
 
       // Decrypt record inside TEE
-      let plaintext: string | undefined;
-      let err: unknown;
-      decryptBlob(blob, dataKey)
-        .then((pt) => {
-          plaintext = pt;
-        })
-        .catch((e) => {
-          err = e;
-        });
-      if (err) throw err;
-      if (!plaintext) throw new Error("Decryption did not resolve");
+      const plaintext = decryptBlob(blob, dataKey);
 
       runtime.log(
         "Record decrypted inside TEE — applying HIPAA Safe Harbor de-identification",

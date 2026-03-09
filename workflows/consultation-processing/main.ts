@@ -51,10 +51,10 @@ type Config = {
  * The raw transcript is NOT stored permanently — only its hash and the
  * AI-generated SOAP note are stored on IPFS.
  */
-const onHttpTrigger = (
+const onHttpTrigger = async (
   runtime: Runtime<Config>,
   payload: HTTPPayload,
-): Record<string, never> => {
+): Promise<Record<string, never>> => {
   const body = decodeJson(payload.input) as {
     patientAddress: string;
     encryptedTranscript: string;
@@ -89,27 +89,7 @@ const onHttpTrigger = (
   // Step 1: Decrypt transcript inside TEE
   // The transcript was encrypted client-side with ECDH (ephemeral key + CRE public key)
   // + AES-256-GCM. Only the CRE TEE can decrypt it using the private key.
-  let transcript: string;
-  try {
-    // CRE coroutine-compatible async resolution
-    let resolved: string | undefined;
-    let err: unknown;
-    decryptInTee(body.encryptedTranscript, crePrivKey)
-      .then((t) => {
-        resolved = t;
-      })
-      .catch((e) => {
-        err = e;
-      });
-    if (err) throw err;
-    if (!resolved)
-      throw new Error("Transcript decryption did not resolve in TEE");
-    transcript = resolved;
-  } catch (e) {
-    throw new Error(
-      `TEE transcript decryption failed: ${e instanceof Error ? e.message : "unknown error"}`,
-    );
-  }
+  const transcript = decryptInTee(body.encryptedTranscript, crePrivKey);
 
   runtime.log(
     "Transcript decrypted inside TEE — plaintext never leaves enclave",

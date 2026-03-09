@@ -134,27 +134,10 @@ const onHttpTrigger = (
       continue;
     }
 
-    // --- Step 2b: Unwrap the AES key (async ECDH) ---
-    // Note: CRE SDK runs handlers synchronously via coroutines; crypto.subtle is available.
-    // For the hackathon, we handle the async via a synchronous-compatible wrapper.
-    let dataKey: CryptoKey;
+    // --- Step 2b: Unwrap the AES key (ECDH + AES-GCM via noble) ---
+    let dataKey: Uint8Array;
     try {
-      // Synchronous execution in CRE uses a blocking Promise resolution pattern
-      dataKey = (() => {
-        let result: CryptoKey | undefined;
-        let err: unknown;
-        unwrapKeyFromMarketplace(wrappedBundle, privKeyB64)
-          .then((k) => {
-            result = k;
-          })
-          .catch((e) => {
-            err = e;
-          });
-        // CRE coroutine yields until resolved
-        if (err) throw err;
-        if (!result) throw new Error("Key unwrap did not resolve");
-        return result;
-      })();
+      dataKey = unwrapKeyFromMarketplace(wrappedBundle, privKeyB64);
     } catch {
       runtime.log(`Patient ${patient}: key unwrap failed — skipping`);
       continue;
@@ -248,7 +231,7 @@ const onHttpTrigger = (
         const blob = JSON.parse(blobStr) as EncryptedBlob;
 
         // Decrypt inside TEE
-        const plaintextJson = await decryptBlob(blob, dataKey);
+        const plaintextJson = decryptBlob(blob, dataKey);
         const parsed = JSON.parse(plaintextJson) as {
           formData?: Record<string, string>;
           templateType?: string;

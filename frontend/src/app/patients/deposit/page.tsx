@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useActiveAccount, useReadContract } from "thirdweb/react";
 import { getKosynUSD } from "@/lib/contracts";
+import { CreFeed } from "@/components/cre-feed";
 import {
   CreditCard,
   Coins,
@@ -27,6 +28,14 @@ function DepositContent() {
   const [copied, setCopied] = useState(false);
   const [creOnline, setCreOnline] = useState<boolean | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [creActive, setCreActive] = useState(false);
+
+  // Activate CRE feed when returning from successful Stripe payment
+  useEffect(() => {
+    if (payment === "success") {
+      setCreActive(true);
+    }
+  }, [payment]);
 
   const { data: balance } = useReadContract({
     contract: getKosynUSD(),
@@ -111,9 +120,9 @@ function DepositContent() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 items-stretch">
         {/* Buy with Card */}
-        <div className="rounded-xl border border-border bg-card p-6">
+        <div className="lg:col-span-2 rounded-xl border border-border bg-card p-6">
           <div className="mb-5 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <CreditCard className="h-5 w-5 text-muted-foreground" />
@@ -216,68 +225,74 @@ function DepositContent() {
           </button>
         </div>
 
-        {/* Deposit KUSD */}
-        <div className="rounded-xl border border-border bg-card p-6">
-          <div className="mb-5 flex items-center gap-2">
-            <Coins className="h-5 w-5 text-muted-foreground" />
-            <h2 className="font-semibold">Deposit KUSD</h2>
-          </div>
-          <p className="mb-5 text-sm text-muted-foreground">
-            Send KUSD directly to your wallet on Avalanche Fuji (chain ID
-            43113). Only send KUSD — other tokens won&apos;t be credited.
-          </p>
-
-          {account ? (
-            <>
-              <div className="mb-5 flex justify-center">
-                <div className="rounded-xl border border-border bg-white p-2">
-                  <img
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${account.address}&margin=8`}
-                    alt="Wallet address QR"
-                    width={160}
-                    height={160}
-                    className="rounded-lg"
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/50 px-3 py-2.5">
-                <span className="flex-1 truncate font-mono text-xs text-muted-foreground">
-                  {account.address}
-                </span>
-                <button
-                  onClick={copyAddress}
-                  className="shrink-0 text-muted-foreground transition-colors hover:text-foreground"
-                >
-                  {copied ? (
-                    <Check className="h-4 w-4 text-emerald-400" />
-                  ) : (
-                    <Copy className="h-4 w-4" />
-                  )}
-                </button>
-              </div>
-
-              <div className="mt-4 space-y-1 text-xs text-muted-foreground">
-                <p>
-                  Network:{" "}
-                  <span className="text-foreground">
-                    Avalanche Fuji Testnet
-                  </span>
-                </p>
-                <p>
-                  Token contract:{" "}
-                  <span className="font-mono text-foreground">
-                    {process.env.NEXT_PUBLIC_KOSYNUSD
-                      ? `${process.env.NEXT_PUBLIC_KOSYNUSD.slice(0, 10)}…${process.env.NEXT_PUBLIC_KOSYNUSD.slice(-6)}`
-                      : "Not deployed"}
-                  </span>
-                </p>
-              </div>
-            </>
+        {/* Right column: CRE Logs (after payment) or Deposit KUSD */}
+        <div className="flex flex-col min-h-[400px]">
+          {payment === "success" ? (
+            <CreFeed workflow="payment-mint" isActive={creActive} />
           ) : (
-            <p className="text-center text-sm text-muted-foreground">
-              Connect your wallet to see your deposit address.
-            </p>
+            <div className="rounded-xl border border-border bg-card p-6 flex-1">
+              <div className="mb-5 flex items-center gap-2">
+                <Coins className="h-5 w-5 text-muted-foreground" />
+                <h2 className="font-semibold">Deposit KUSD</h2>
+              </div>
+              <p className="mb-5 text-sm text-muted-foreground">
+                Send KUSD directly to your wallet on Avalanche Fuji (chain ID
+                43113). Only send KUSD — other tokens won&apos;t be credited.
+              </p>
+
+              {account ? (
+                <>
+                  <div className="mb-5 flex justify-center">
+                    <div className="rounded-xl border border-border bg-white p-2">
+                      <img
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${account.address}&margin=8`}
+                        alt="Wallet address QR"
+                        width={160}
+                        height={160}
+                        className="rounded-lg"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/50 px-3 py-2.5">
+                    <span className="flex-1 truncate font-mono text-xs text-muted-foreground">
+                      {account.address}
+                    </span>
+                    <button
+                      onClick={copyAddress}
+                      className="shrink-0 text-muted-foreground transition-colors hover:text-foreground"
+                    >
+                      {copied ? (
+                        <Check className="h-4 w-4 text-emerald-400" />
+                      ) : (
+                        <Copy className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
+
+                  <div className="mt-4 space-y-1 text-xs text-muted-foreground">
+                    <p>
+                      Network:{" "}
+                      <span className="text-foreground">
+                        Avalanche Fuji Testnet
+                      </span>
+                    </p>
+                    <p>
+                      Token contract:{" "}
+                      <span className="font-mono text-foreground">
+                        {process.env.NEXT_PUBLIC_KOSYNUSD
+                          ? `${process.env.NEXT_PUBLIC_KOSYNUSD.slice(0, 10)}…${process.env.NEXT_PUBLIC_KOSYNUSD.slice(-6)}`
+                          : "Not deployed"}
+                      </span>
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <p className="text-center text-sm text-muted-foreground">
+                  Connect your wallet to see your deposit address.
+                </p>
+              )}
+            </div>
           )}
         </div>
       </div>

@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { usePasskey } from "@/hooks/use-passkey";
-import { getRecords } from "@/lib/demo-api";
-import type { DemoRecord } from "@/app/api/demo/store";
+import { readContract } from "thirdweb";
+import { getHealthRecordRegistry } from "@/lib/contracts";
 
 export interface AiSession {
   sessionToken: string;
@@ -13,18 +13,28 @@ export interface AiSession {
 
 export type SessionState = "locked" | "authorizing" | "active" | "expired";
 
-function formatHealthContext(records: DemoRecord[]): string {
+const RECORD_TYPE_NAMES: Record<number, string> = {
+  0: "Health",
+  1: "Prescription",
+  2: "Certificate",
+  3: "Consultation",
+};
+
+interface OnChainRecordSummary {
+  id: number;
+  recordType: string;
+  uploadTimestamp: number;
+  ipfsCid: string;
+}
+
+function formatHealthContext(records: OnChainRecordSummary[]): string {
   if (records.length === 0) return "No health records available.";
   return records
     .map((r) => {
-      const header = `[${r.recordType.toUpperCase()}] ${r.label || r.templateType}`;
-      if (!r.formData) return header;
-      const fields = Object.entries(r.formData)
-        .map(([k, v]) => `  ${k}: ${v}`)
-        .join("\n");
-      return `${header}\n${fields}`;
+      const date = new Date(r.uploadTimestamp * 1000).toLocaleDateString();
+      return `[${r.recordType.toUpperCase()}] Record #${r.id} — uploaded ${date} (CID: ${r.ipfsCid.slice(0, 12)}...)`;
     })
-    .join("\n\n");
+    .join("\n");
 }
 
 export function useAiSession(patientAddress: string) {
@@ -65,9 +75,31 @@ export function useAiSession(patientAddress: string) {
           return;
         }
 
-        // Fetch patient records for health context
-        const records = await getRecords(patientAddress);
-        const healthContext = formatHealthContext(records);
+        // Fetch patient records from chain for health context
+        const contract = getHealthRecordRegistry();
+        const recordIds = await readContract({
+          contract,
+          method: "getPatientRecords",
+          params: [patientAddress as `0x${string}`],
+        });
+        const records = await Promise.all(
+          recordIds.map(async (id) => {
+            const r = await readContract({
+              contract,
+              method: "getRecord",
+              params: [id],
+            });
+            return {
+              id: Number(id),
+              recordType: RECORD_TYPE_NAMES[Number(r.recordType)] ?? "Health",
+              uploadTimestamp: Number(r.uploadTimestamp),
+              ipfsCid: r.ipfsCid,
+            } as OnChainRecordSummary;
+          }),
+        );
+        const healthContext = formatHealthContext(
+          records.filter((r) => r.ipfsCid !== ""),
+        );
 
         // Create server-side session
         const res = await fetch("/api/ai-session", {

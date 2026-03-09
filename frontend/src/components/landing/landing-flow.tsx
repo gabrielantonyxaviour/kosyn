@@ -36,7 +36,7 @@ const steps = [
     num: "05",
     actor: "DOCTOR",
     action: "Receives report",
-    sub: "Re-encrypted output. Accessible only to the approved provider. Audit log immutable.",
+    sub: "Re-encrypted output. Accessible only to the approved doctor. Audit log immutable.",
   },
 ];
 

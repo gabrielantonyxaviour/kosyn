@@ -64,20 +64,20 @@ export default function LandingNav() {
 
         <div className="flex items-center gap-4">
           <Link
-            href="/patients/onboarding"
+            href="/pitch"
+            className="px-4 py-2 transition-all duration-300 hover:text-white"
             style={{
               fontFamily: "var(--font-mono-custom)",
               fontSize: "11px",
-              color: "#555",
+              color: "#666",
               letterSpacing: "0.1em",
               textTransform: "uppercase",
             }}
-            className="hover:text-white transition-colors duration-300 px-3 py-2"
           >
-            Patient Login
+            Pitch Deck
           </Link>
           <Link
-            href="/doctors/onboarding"
+            href="/demo-video"
             className="px-5 py-2.5 transition-all duration-300 hover:bg-white hover:text-black"
             style={{
               fontFamily: "var(--font-mono-custom)",
@@ -89,7 +89,7 @@ export default function LandingNav() {
               borderRadius: "6px",
             }}
           >
-            Provider Access
+            Demo
           </Link>
         </div>
       </div>

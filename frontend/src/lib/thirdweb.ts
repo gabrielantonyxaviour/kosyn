@@ -9,7 +9,12 @@ import { inAppWallet, createWallet } from "thirdweb/wallets";
 
 let _client: ThirdwebClient | null = null;
 
-export const chain = defineChain(43113); // Avalanche Fuji
+export const chain = defineChain({
+  id: 43113,
+  rpc:
+    process.env.NEXT_PUBLIC_AVALANCHE_FUJI_RPC_URL ||
+    "https://api.avax-test.network/ext/bc/C/rpc",
+}); // Avalanche Fuji
 
 export function getClient(): ThirdwebClient {
   if (!_client) {

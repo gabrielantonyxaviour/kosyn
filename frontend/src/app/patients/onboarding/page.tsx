@@ -6,9 +6,8 @@ import {
   useReadContract,
   ConnectButton,
 } from "thirdweb/react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { isOnboarded } from "@/lib/patient-profile";
 import { getPatientRegistry, ADDRESSES } from "@/lib/contracts";
 import { client, patientWallet, chain } from "@/lib/thirdweb";
 import { PatientOnboarding } from "@/components/patient-onboarding";
@@ -160,6 +159,7 @@ export default function PatientOnboardingPage() {
   const status = useActiveWalletConnectionStatus();
   const router = useRouter();
   const [showForm, setShowForm] = useState(false);
+  const formShownRef = useRef(false);
 
   const { data: isRegisteredOnChain, isLoading: contractChecking } =
     useReadContract({
@@ -172,22 +172,26 @@ export default function PatientOnboardingPage() {
   useEffect(() => {
     if (status !== "connected" || !account) {
       setShowForm(false);
+      formShownRef.current = false;
       return;
     }
 
-    if (contractDeployed) {
-      if (contractChecking) return;
-      if (isRegisteredOnChain || isOnboarded(account.address)) {
-        router.replace("/patients/dashboard");
-      } else {
-        setShowForm(true);
-      }
+    // Don't auto-redirect if user is currently completing onboarding
+    if (formShownRef.current) return;
+
+    if (!contractDeployed) {
+      setShowForm(true);
+      formShownRef.current = true;
+      return;
+    }
+
+    if (contractChecking) return;
+
+    if (isRegisteredOnChain) {
+      router.replace("/patients/dashboard");
     } else {
-      if (isOnboarded(account.address)) {
-        router.replace("/patients/dashboard");
-      } else {
-        setShowForm(true);
-      }
+      setShowForm(true);
+      formShownRef.current = true;
     }
   }, [status, account?.address, isRegisteredOnChain, contractChecking, router]);
 

@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useActiveAccount, useReadContract } from "thirdweb/react";
 import { getKosynUSD } from "@/lib/contracts";
 import { CreFeed } from "@/components/cre-feed";
+import { useCreLogs } from "@/hooks/use-cre-logs";
 import {
   CreditCard,
   Coins,
@@ -34,9 +35,23 @@ function DepositContent() {
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [creActive, setCreActive] = useState(false);
   const [mintStatus, setMintStatus] = useState<MintStatus>("idle");
+  const [mintError, setMintError] = useState<string | null>(null);
+  const { logs: creLogs, push: pushLog, clear: clearLogs } = useCreLogs();
 
-  // Capture balance at page load to detect increase after minting
-  const initialBalanceRef = useRef<bigint | null>(null);
+  const hasTriggeredRef = useRef(false);
+  const sessionParam = searchParams.get("session");
+
+  // Poll during processing + 15s after minting to catch on-chain balance update
+  const [keepPolling, setKeepPolling] = useState(false);
+
+  useEffect(() => {
+    if (mintStatus !== "minted") return;
+    setKeepPolling(true);
+    const id = setTimeout(() => setKeepPolling(false), 15000);
+    return () => clearTimeout(id);
+  }, [mintStatus]);
+
+  const shouldPoll = mintStatus === "processing" || keepPolling;
 
   const { data: balance } = useReadContract({
     contract: getKosynUSD(),
@@ -44,36 +59,104 @@ function DepositContent() {
     params: [account?.address ?? "0x0000000000000000000000000000000000000000"],
     queryOptions: {
       enabled: !!account,
-      refetchInterval: mintStatus === "processing" ? 3000 : undefined,
+      refetchInterval: shouldPoll ? 3000 : undefined,
     },
   });
 
-  // Capture initial balance on first load
+  // When returning from Stripe success, trigger real CRE workflow (once per session ID)
   useEffect(() => {
-    if (balance !== undefined && initialBalanceRef.current === null) {
-      initialBalanceRef.current = balance;
-    }
-  }, [balance]);
+    if (payment !== "success" || !sessionParam || hasTriggeredRef.current)
+      return;
+    hasTriggeredRef.current = true;
 
-  // Detect balance increase → minting confirmed
-  useEffect(() => {
-    if (
-      mintStatus === "processing" &&
-      balance !== undefined &&
-      initialBalanceRef.current !== null &&
-      balance > initialBalanceRef.current
-    ) {
-      setMintStatus("minted");
-    }
-  }, [balance, mintStatus]);
+    const storageKey = `cre-mint-${sessionParam}`;
+    const cached = sessionStorage.getItem(storageKey);
 
-  // When returning from Stripe success, start processing
-  useEffect(() => {
-    if (payment === "success" && mintStatus === "idle") {
+    // Already processed this checkout session in this tab — show final state
+    if (cached) {
+      const result = JSON.parse(cached) as {
+        status: MintStatus;
+        error?: string;
+      };
+      setMintStatus(result.status);
+      setCreActive(true);
+      if (result.error) setMintError(result.error);
+      if (result.status === "minted") {
+        pushLog("OK", "Workflow already completed for this payment");
+      } else if (result.status === "failed") {
+        pushLog("ERR", result.error ?? "Previously failed");
+      }
+      return;
+    }
+
+    const explorerBase = "https://testnet.snowtrace.io";
+
+    async function processPayment() {
       setMintStatus("processing");
       setCreActive(true);
+      clearLogs();
+
+      pushLog("INFO", "CRE workflow triggered");
+      pushLog("INFO", "Verifying Stripe payment...");
+
+      try {
+        const res = await fetch("/api/stripe/process-payment", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sessionId: sessionParam }),
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          pushLog("ERR", data.error ?? "Payment processing failed");
+          setMintStatus("failed");
+          setMintError(data.error ?? "Payment processing failed");
+          sessionStorage.setItem(
+            storageKey,
+            JSON.stringify({
+              status: "failed",
+              error: data.error ?? "Payment processing failed",
+            }),
+          );
+          return;
+        }
+
+        pushLog("OK", `Stripe payment confirmed — $${data.amount} USD`);
+        pushLog("OK", "Payment verified via Stripe API inside CRE TEE");
+        pushLog(
+          "INFO",
+          `Minting ${data.amount} KUSD to ${data.recipientAddress.slice(0, 8)}...`,
+        );
+
+        const txHash =
+          data.cre?.txHash ?? data.cre?.transactionHash ?? data.cre?.hash;
+
+        if (txHash) {
+          pushLog("OK", "KUSD minted", `${explorerBase}/tx/${txHash}`);
+        } else {
+          pushLog("OK", "KUSD minted — CRE EVM Write complete");
+        }
+
+        pushLog("OK", "Workflow complete");
+        setMintStatus("minted");
+        sessionStorage.setItem(
+          storageKey,
+          JSON.stringify({ status: "minted" }),
+        );
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Network error";
+        pushLog("ERR", msg);
+        setMintStatus("failed");
+        setMintError(msg);
+        sessionStorage.setItem(
+          storageKey,
+          JSON.stringify({ status: "failed", error: msg }),
+        );
+      }
     }
-  }, [payment, mintStatus]);
+
+    processPayment();
+  }, [payment, sessionParam, pushLog, clearLogs]);
 
   useEffect(() => {
     async function checkBridge() {
@@ -180,6 +263,29 @@ function DepositContent() {
                     Make Another Deposit
                   </a>
                 </>
+              ) : mintStatus === "failed" ? (
+                <>
+                  <div className="flex flex-col items-center gap-4 py-6">
+                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-red-500/10">
+                      <AlertCircle className="h-8 w-8 text-red-400" />
+                    </div>
+                    <div className="text-center space-y-1">
+                      <p className="text-lg font-semibold text-red-400">
+                        Minting Failed
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {mintError ??
+                          "Something went wrong while minting KUSD."}
+                      </p>
+                    </div>
+                  </div>
+                  <a
+                    href="/patients/deposit"
+                    className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+                  >
+                    Try Again
+                  </a>
+                </>
               ) : (
                 <>
                   <div className="flex items-center gap-3">
@@ -201,65 +307,38 @@ function DepositContent() {
                       </div>
                     </div>
 
-                    {/* Step 2: Webhook → CRE */}
-                    <div
-                      className={`flex items-center gap-3 rounded-lg border p-4 ${
-                        mintStatus === "processing"
-                          ? "border-blue-500/20 bg-blue-500/5"
-                          : "border-emerald-500/20 bg-emerald-500/5"
-                      }`}
-                    >
-                      {mintStatus === "processing" ? (
-                        <Loader2 className="h-5 w-5 shrink-0 text-blue-400 animate-spin" />
-                      ) : (
-                        <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-400" />
-                      )}
+                    {/* Step 2: CRE workflow */}
+                    <div className="flex items-center gap-3 rounded-lg border border-blue-500/20 bg-blue-500/5 p-4">
+                      <Loader2 className="h-5 w-5 shrink-0 text-blue-400 animate-spin" />
                       <div>
                         <p className="text-sm font-medium">
                           CRE payment-mint workflow
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {mintStatus === "processing"
-                            ? "Verifying payment and minting KUSD on-chain..."
-                            : "KUSD minted successfully"}
+                          Verifying payment and minting KUSD on-chain...
                         </p>
                       </div>
                     </div>
 
                     {/* Step 3: On-chain confirmation */}
-                    <div
-                      className={`flex items-center gap-3 rounded-lg border p-4 ${
-                        mintStatus === "processing"
-                          ? "border-border bg-muted/10"
-                          : "border-emerald-500/20 bg-emerald-500/5"
-                      }`}
-                    >
-                      {mintStatus === "processing" ? (
-                        <div className="h-5 w-5 shrink-0 rounded-full border-2 border-muted-foreground/30" />
-                      ) : (
-                        <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-400" />
-                      )}
+                    <div className="flex items-center gap-3 rounded-lg border border-border bg-muted/10 p-4">
+                      <div className="h-5 w-5 shrink-0 rounded-full border-2 border-muted-foreground/30" />
                       <div>
-                        <p
-                          className={`text-sm font-medium ${mintStatus === "processing" ? "text-muted-foreground" : ""}`}
-                        >
+                        <p className="text-sm font-medium text-muted-foreground">
                           On-chain confirmation
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {mintStatus === "processing"
-                            ? `Waiting for ${amountParam} KUSD to appear in your wallet...`
-                            : `${amountParam} KUSD received`}
+                          Waiting for {amountParam} KUSD to appear in your
+                          wallet...
                         </p>
                       </div>
                     </div>
                   </div>
 
-                  {mintStatus === "processing" && (
-                    <p className="text-xs text-muted-foreground text-center">
-                      Polling your KUSD balance every 3 seconds. This page will
-                      update automatically when minting completes.
-                    </p>
-                  )}
+                  <p className="text-xs text-muted-foreground text-center">
+                    This may take a few seconds. Watch the CRE logs for
+                    real-time progress.
+                  </p>
                 </>
               )}
             </div>
@@ -372,7 +451,7 @@ function DepositContent() {
         {/* Right column: CRE Logs (after payment) or Deposit KUSD */}
         <div className="flex flex-col min-h-[400px]">
           {isPostPayment ? (
-            <CreFeed workflow="payment-mint" isActive={creActive} />
+            <CreFeed workflow="payment-mint" logs={creLogs} />
           ) : (
             <div className="rounded-xl border border-border bg-card p-6 flex-1">
               <div className="mb-5 flex items-center gap-2">

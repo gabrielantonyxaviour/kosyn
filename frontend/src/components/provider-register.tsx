@@ -4,13 +4,6 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { CreFeed } from "@/components/cre-feed";
 import { buildJurisdiction } from "@/lib/locations";
@@ -27,11 +20,20 @@ import {
   Loader2,
   FileCheck,
   Fingerprint,
+  RefreshCw,
+  Search,
+  BadgeCheck,
+  XCircle,
+  LogOut,
 } from "lucide-react";
 import { triggerWorkflow } from "@/lib/cre";
+import { useCreLogs, truncHash, FUJI_EXPLORER } from "@/hooks/use-cre-logs";
 import { toast } from "sonner";
-import { useActiveAccount, useWalletBalance } from "thirdweb/react";
-import { client, chain } from "@/lib/thirdweb";
+import {
+  useActiveAccount,
+  useDisconnect,
+  useActiveWallet,
+} from "thirdweb/react";
 import { useRouter } from "next/navigation";
 import { usePasskey } from "@/hooks/use-passkey";
 
@@ -49,6 +51,36 @@ const specialties = [
   "Oncology",
 ];
 
+// Real NPI numbers from the US National Provider Identifier Registry
+const mockDoctors = [
+  { npi: "1710071717", fee: "75" },
+  { npi: "1639311244", fee: "90" },
+  { npi: "1043324007", fee: "60" },
+  { npi: "1740275312", fee: "85" },
+  { npi: "1356872006", fee: "70" },
+  { npi: "1255652087", fee: "130" },
+  { npi: "1790762623", fee: "80" },
+  { npi: "1598298242", fee: "95" },
+  { npi: "1881198588", fee: "90" },
+  { npi: "1689162596", fee: "100" },
+  { npi: "1619181559", fee: "110" },
+  { npi: "1891835658", fee: "85" },
+  { npi: "1528076718", fee: "75" },
+  { npi: "1962778159", fee: "120" },
+  { npi: "1982833471", fee: "95" },
+];
+
+interface NpiResult {
+  valid: boolean;
+  npi?: string;
+  name?: string;
+  credential?: string;
+  specialty?: string;
+  state?: string;
+  status?: string;
+  error?: string;
+}
+
 type SubmitStage =
   | "idle"
   | "uploading-cert"
@@ -59,13 +91,9 @@ type SubmitStage =
 
 export function ProviderRegister() {
   const account = useActiveAccount();
+  const wallet = useActiveWallet();
+  const { disconnect } = useDisconnect();
   const router = useRouter();
-  const { data: avaxBalance } = useWalletBalance({
-    client,
-    chain,
-    address: account?.address,
-  });
-  const insufficientGas = !avaxBalance || Number(avaxBalance.value) < 1e14;
   const {
     register: registerPasskey,
     isLoading: passkeyLoading,
@@ -73,12 +101,10 @@ export function ProviderRegister() {
   } = usePasskey();
 
   const [step, setStep] = useState<1 | 2>(1);
-  const [form, setForm] = useState({
-    name: "",
-    specialty: "",
-    licenseNumber: "",
-    fee: "",
-  });
+  const [npiInput, setNpiInput] = useState("");
+  const [npiVerified, setNpiVerified] = useState<NpiResult | null>(null);
+  const [npiLoading, setNpiLoading] = useState(false);
+  const [fee, setFee] = useState("");
   const [jurCountry, setJurCountry] = useState("");
   const [jurRegion, setJurRegion] = useState("");
   const [certificate, setCertificate] = useState<File | null>(null);
@@ -88,46 +114,86 @@ export function ProviderRegister() {
   const [stage, setStage] = useState<SubmitStage>("idle");
   const [stageError, setStageError] = useState<string | null>(null);
   const [creActive, setCreActive] = useState(false);
+  const { logs: creLogs, push: pushLog, clear: clearLogs } = useCreLogs();
 
-  const isSubmitting = stage === "uploading-cert" || stage === "cre-verifying";
+  const isSubmitting =
+    stage === "uploading-cert" ||
+    stage === "cre-verifying" ||
+    stage === "passkey-register";
+
+  const verifyNpi = async (npi?: string) => {
+    const value = npi ?? npiInput.trim();
+    if (!/^\d{10}$/.test(value)) {
+      toast.error("NPI must be a 10-digit number");
+      return;
+    }
+    setNpiLoading(true);
+    setNpiVerified(null);
+    try {
+      const res = await fetch(`/api/npi/verify?npi=${value}`);
+      const data: NpiResult = await res.json();
+      setNpiVerified(data);
+      if (data.valid) {
+        toast.success(`Verified: ${data.name} (${data.credential ?? "MD"})`);
+      } else if (data.error) {
+        toast.error(data.error);
+      } else {
+        toast.error("NPI not found or provider is inactive");
+      }
+    } catch {
+      toast.error("Failed to reach NPI registry");
+    } finally {
+      setNpiLoading(false);
+    }
+  };
+
+  const handleMockDoctor = async () => {
+    const doc = mockDoctors[Math.floor(Math.random() * mockDoctors.length)];
+    setNpiInput(doc.npi);
+    setFee(doc.fee);
+    setNpiVerified(null);
+    // Auto-verify after setting
+    setNpiLoading(true);
+    try {
+      const res = await fetch(`/api/npi/verify?npi=${doc.npi}`);
+      const data: NpiResult = await res.json();
+      setNpiVerified(data);
+      if (data.valid) {
+        toast.success(`Verified: ${data.name} (${data.credential ?? "MD"})`);
+      }
+    } catch {
+      toast.error("Failed to reach NPI registry");
+    } finally {
+      setNpiLoading(false);
+    }
+  };
+
+  const [passkeyCredId, setPasskeyCredId] = useState<string | null>(null);
 
   const handlePasskeyRegister = async () => {
     try {
-      const cred = await registerPasskey(form.name);
-      if (cred && account) {
-        // Persist credential ID alongside provider data so it can be verified later
-        const existing = localStorage.getItem(PROVIDER_KEY(account.address));
-        if (existing) {
-          const parsed = JSON.parse(existing) as Record<string, unknown>;
-          localStorage.setItem(
-            PROVIDER_KEY(account.address),
-            JSON.stringify({ ...parsed, passkeyCredentialId: cred.id }),
-          );
-        }
+      const cred = await registerPasskey(npiVerified?.name ?? "Provider");
+      if (cred) {
+        setPasskeyCredId(cred.id);
       }
-      toast.success(
-        "Registration verified. On-chain credential and passkey issued.",
-      );
-      setStage("done");
+      toast.success("Passkey registered. Starting on-chain registration...");
+      // After passkey succeeds, trigger CRE workflow
+      await triggerCreWorkflow(cred?.id ?? null);
     } catch {
-      toast.success("Registration verified. Passkey skipped.");
-      setStage("done");
+      toast.error("Passkey registration failed. Please try again.");
     }
   };
 
   const step1Valid =
-    form.name.trim() !== "" &&
-    form.specialty !== "" &&
+    npiVerified?.valid === true &&
+    fee.trim() !== "" &&
     jurCountry !== "" &&
-    jurRegion !== "" &&
-    form.licenseNumber.trim() !== "" &&
-    form.fee.trim() !== "";
+    jurRegion !== "";
 
-  // Compute licenseHash = SHA-256(licenseNumber) as hex
-  const computeLicenseHash = async (licenseNumber: string): Promise<string> => {
+  const computeLicenseHash = async (npi: string): Promise<string> => {
     const hashBuf = await crypto.subtle.digest(
       "SHA-256",
-      new TextEncoder().encode(licenseNumber),
+      new TextEncoder().encode(npi),
     );
     return (
       "0x" +
@@ -139,11 +205,10 @@ export function ProviderRegister() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!account) return;
+    if (!account || !npiVerified?.valid) return;
     setStageError(null);
 
-    // Step 1 — Upload certificate to IPFS
-    let uploadedCid: string | null = null;
+    // Upload certificate to IPFS if provided
     if (certificate) {
       setStage("uploading-cert");
       try {
@@ -163,8 +228,7 @@ export function ProviderRegister() {
         const json = (await res.json()) as { cid?: string; error?: string };
         if (!res.ok || !json.cid)
           throw new Error(json.error ?? "IPFS upload failed");
-        uploadedCid = json.cid;
-        setCertCid(uploadedCid);
+        setCertCid(json.cid);
       } catch (err) {
         setStage("error");
         setStageError(
@@ -174,43 +238,76 @@ export function ProviderRegister() {
       }
     }
 
-    // Step 2 — Compute licenseHash + run CRE verification workflow
+    // Show passkey registration — CRE workflow triggers after passkey
+    setStage("passkey-register");
+  };
+
+  const triggerCreWorkflow = async (credId: string | null) => {
+    if (!account || !npiVerified?.valid) return;
+
     setStage("cre-verifying");
     setCreActive(true);
+    clearLogs();
+    pushLog("INFO", "CRE workflow triggered");
     try {
-      const hash = await computeLicenseHash(form.licenseNumber);
+      pushLog("INFO", "Computing NPI hash (SHA-256)...");
+      const hash = await computeLicenseHash(npiVerified.npi!);
       setLicenseHash(hash);
+      pushLog("OK", `NPI hash: ${truncHash(hash)}`);
 
+      pushLog(
+        "INFO",
+        `NPI verified: ${npiVerified.name} — ${npiVerified.specialty}`,
+      );
+      pushLog("INFO", "Registering provider via CRE TEE...");
       const result = await triggerWorkflow("provider-registration", {
-        ...form,
-        fee: parseInt(form.fee) || 50,
-        certCid: uploadedCid ?? "no-cert",
+        providerAddress: account.address,
+        name: npiVerified.name,
+        specialty: npiVerified.specialty,
+        credential: npiVerified.credential,
+        licenseNumber: npiVerified.npi,
+        jurisdiction: buildJurisdiction(jurCountry, jurRegion),
+        fee: parseInt(fee) || 50,
+        certCid: certCid ?? "no-cert",
         licenseHash: hash,
       });
 
       if (!result.success) {
+        pushLog("ERR", result.error ?? "CRE verification failed");
         throw new Error(result.error ?? "CRE verification failed");
       }
 
       const returnedTx = result.txHash ?? null;
       setTxHash(returnedTx);
 
-      // Persist registration to localStorage (mirrors what ProviderRegistry stores on-chain)
+      if (returnedTx) {
+        pushLog(
+          "OK",
+          `Tx confirmed on Avalanche Fuji`,
+          `${FUJI_EXPLORER}/${returnedTx}`,
+        );
+      }
+      pushLog("OK", "Provider registered on-chain");
+      pushLog("OK", "Workflow complete");
+
       localStorage.setItem(
         PROVIDER_KEY(account.address),
         JSON.stringify({
-          name: form.name,
-          specialty: form.specialty,
+          name: npiVerified.name,
+          specialty: npiVerified.specialty,
+          credential: npiVerified.credential,
+          npi: npiVerified.npi,
           jurisdiction: buildJurisdiction(jurCountry, jurRegion),
           licenseHash: hash,
-          certCid: uploadedCid,
+          certCid,
           txHash: returnedTx,
-          fee: parseInt(form.fee) || 50,
+          fee: parseInt(fee) || 50,
+          passkeyCredentialId: credId,
           registeredAt: new Date().toISOString(),
         }),
       );
 
-      setStage("passkey-register");
+      setStage("done");
     } catch (err) {
       setStage("error");
       setStageError(err instanceof Error ? err.message : "Registration failed");
@@ -219,7 +316,7 @@ export function ProviderRegister() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="max-h-[calc(100vh-4rem)] overflow-y-auto space-y-6 px-1">
       {/* Header */}
       <div className="text-center space-y-2">
         <div className="flex items-center justify-center gap-2">
@@ -246,7 +343,7 @@ export function ProviderRegister() {
           <span
             className={`text-sm ${step === 1 ? "font-medium" : "text-muted-foreground"}`}
           >
-            Your Information
+            NPI Verification
           </span>
         </div>
         <div className="h-px w-8 bg-border" />
@@ -272,72 +369,133 @@ export function ProviderRegister() {
       {step === 1 && (
         <div className="rounded-lg border border-border p-6 space-y-5">
           <div className="space-y-4">
+            {/* NPI input + verify */}
             <div className="space-y-2">
-              <Label htmlFor="name">Full Name</Label>
-              <Input
-                id="name"
-                value={form.name}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, name: e.target.value }))
-                }
-                placeholder="Dr. Jane Smith"
-              />
+              <Label htmlFor="npi">NPI Number</Label>
+              <p className="text-xs text-muted-foreground">
+                Your 10-digit National Provider Identifier from the US NPI
+                Registry
+              </p>
+              <div className="flex gap-2">
+                <Input
+                  id="npi"
+                  value={npiInput}
+                  onChange={(e) => {
+                    const v = e.target.value
+                      .replace(/[^0-9]/g, "")
+                      .slice(0, 10);
+                    setNpiInput(v);
+                    if (npiVerified) setNpiVerified(null);
+                  }}
+                  placeholder="1234567890"
+                  className="font-mono"
+                  maxLength={10}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => verifyNpi()}
+                  disabled={npiInput.length !== 10 || npiLoading}
+                  className="shrink-0"
+                >
+                  {npiLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Search className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="specialty">Specialty</Label>
-              <Select
-                value={form.specialty}
-                onValueChange={(v) => setForm((f) => ({ ...f, specialty: v }))}
+
+            {/* NPI verification result */}
+            {npiVerified && (
+              <div
+                className={`rounded-lg border p-4 space-y-2 ${
+                  npiVerified.valid
+                    ? "border-emerald-500/30 bg-emerald-500/5"
+                    : "border-red-500/30 bg-red-500/5"
+                }`}
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select specialty" />
-                </SelectTrigger>
-                <SelectContent>
-                  {specialties.map((s) => (
-                    <SelectItem key={s} value={s}>
-                      {s}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Jurisdiction</Label>
-              <LocationCombobox
-                selectedCountry={jurCountry}
-                selectedRegion={jurRegion}
-                onCountryChange={(code) => {
-                  setJurCountry(code);
-                  setJurRegion("");
-                }}
-                onRegionChange={setJurRegion}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="license">License Number</Label>
-              <Input
-                id="license"
-                value={form.licenseNumber}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, licenseNumber: e.target.value }))
-                }
-                placeholder="A-123456"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="fee">Consultation Fee (KUSD)</Label>
-              <Input
-                id="fee"
-                type="text"
-                inputMode="decimal"
-                value={form.fee}
-                onChange={(e) => {
-                  const v = e.target.value.replace(/[^0-9.]/g, "");
-                  setForm((f) => ({ ...f, fee: v }));
-                }}
-                placeholder="50"
-              />
-            </div>
+                {npiVerified.valid ? (
+                  <>
+                    <div className="flex items-center gap-2">
+                      <BadgeCheck className="h-4 w-4 text-emerald-400" />
+                      <span className="text-sm font-medium text-emerald-400">
+                        Verified Provider
+                      </span>
+                    </div>
+                    <div className="space-y-1 text-xs">
+                      <p>
+                        <span className="text-muted-foreground">Name:</span>{" "}
+                        {npiVerified.name}
+                      </p>
+                      {npiVerified.credential && (
+                        <p>
+                          <span className="text-muted-foreground">
+                            Credential:
+                          </span>{" "}
+                          {npiVerified.credential}
+                        </p>
+                      )}
+                      {npiVerified.specialty && (
+                        <p>
+                          <span className="text-muted-foreground">
+                            Specialty:
+                          </span>{" "}
+                          {npiVerified.specialty}
+                        </p>
+                      )}
+                      {npiVerified.state && (
+                        <p>
+                          <span className="text-muted-foreground">State:</span>{" "}
+                          {npiVerified.state}
+                        </p>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <XCircle className="h-4 w-4 text-red-400" />
+                    <span className="text-sm text-red-400">
+                      {npiVerified.error ??
+                        "NPI not found or provider is inactive"}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Jurisdiction — only show after NPI verified */}
+            {npiVerified?.valid && (
+              <>
+                <div className="space-y-2">
+                  <Label>Practice Jurisdiction</Label>
+                  <LocationCombobox
+                    selectedCountry={jurCountry}
+                    selectedRegion={jurRegion}
+                    onCountryChange={(code) => {
+                      setJurCountry(code);
+                      setJurRegion("");
+                    }}
+                    onRegionChange={setJurRegion}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="fee">Consultation Fee (KUSD)</Label>
+                  <Input
+                    id="fee"
+                    type="text"
+                    inputMode="decimal"
+                    value={fee}
+                    onChange={(e) => {
+                      const v = e.target.value.replace(/[^0-9.]/g, "");
+                      setFee(v);
+                    }}
+                    placeholder="50"
+                  />
+                </div>
+              </>
+            )}
           </div>
           <Button
             onClick={() => setStep(2)}
@@ -346,6 +504,17 @@ export function ProviderRegister() {
           >
             Continue <ArrowRight className="h-4 w-4 ml-1" />
           </Button>
+          <button
+            type="button"
+            onClick={handleMockDoctor}
+            disabled={npiLoading}
+            className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors w-full py-1 disabled:opacity-50"
+          >
+            <RefreshCw
+              className={`h-3 w-3 ${npiLoading ? "animate-spin" : ""}`}
+            />
+            Generate Real Doctor
+          </button>
         </div>
       )}
 
@@ -353,9 +522,30 @@ export function ProviderRegister() {
       {step === 2 && (
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="rounded-lg border border-border p-6 space-y-5">
+            {/* Verified provider summary */}
+            {npiVerified?.valid && (
+              <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3 space-y-1">
+                <div className="flex items-center gap-2">
+                  <BadgeCheck className="h-4 w-4 text-emerald-400" />
+                  <span className="text-sm font-medium">
+                    {npiVerified.name}
+                  </span>
+                  {npiVerified.credential && (
+                    <Badge variant="outline" className="text-[10px] px-1.5">
+                      {npiVerified.credential}
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  NPI {npiVerified.npi} · {npiVerified.specialty} ·{" "}
+                  {npiVerified.state}
+                </p>
+              </div>
+            )}
+
             {/* Certificate upload */}
             <div className="space-y-2">
-              <Label htmlFor="cert">Medical Certificate</Label>
+              <Label htmlFor="cert">Medical Certificate (optional)</Label>
               <p className="text-xs text-muted-foreground">
                 Uploaded to IPFS inside the TEE — raw file never touches Kosyn
                 servers
@@ -402,9 +592,9 @@ export function ProviderRegister() {
               </p>
               <div className="space-y-2.5 text-xs text-muted-foreground">
                 {[
-                  "Your certificate is uploaded to IPFS. Only an encrypted CID is stored — raw file never leaves your device unencrypted.",
-                  "The CRE TEE fetches the cert and verifies your license against registry databases. Raw credentials never touch Kosyn servers.",
-                  "An on-chain credential is issued to your wallet via the CRE forwarder, authorizing you to request patient data.",
+                  "Your NPI has been verified against the US National Provider Identifier Registry. The NPI hash is computed client-side.",
+                  "The CRE TEE cross-references your NPI with on-chain data and issues a verifiable credential to your wallet.",
+                  "An on-chain credential is issued via the CRE forwarder, authorizing you to request patient data.",
                 ].map((text, i) => (
                   <div key={i} className="flex items-start gap-2.5">
                     <Badge
@@ -427,14 +617,14 @@ export function ProviderRegister() {
 
             {/* CRE feed */}
             {creActive && (
-              <CreFeed workflow="provider-registration" isActive={creActive} />
+              <CreFeed workflow="provider-registration" logs={creLogs} />
             )}
 
-            {/* License hash reveal */}
+            {/* NPI hash reveal */}
             {licenseHash && (
               <div className="rounded bg-muted/40 border border-border px-2.5 py-1.5 space-y-0.5">
                 <p className="text-[10px] text-muted-foreground font-mono">
-                  License hash (SHA-256)
+                  NPI hash (SHA-256)
                 </p>
                 <p className="text-[10px] font-mono text-foreground/70 break-all">
                   {licenseHash}
@@ -483,14 +673,14 @@ export function ProviderRegister() {
               <div>
                 <p className="text-sm font-medium">Register Identity Passkey</p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Your passkey will authenticate record access during
-                  consultations.
+                  Your passkey authenticates record access during consultations.
+                  This is required to complete registration.
                 </p>
               </div>
               {!passkeySupported && (
                 <p className="text-xs text-amber-400">
-                  Passkeys are not supported in this browser. You can skip this
-                  step.
+                  Passkeys are not supported in this browser. Try Chrome or
+                  Safari.
                 </p>
               )}
               <Button
@@ -510,23 +700,25 @@ export function ProviderRegister() {
                   </>
                 )}
               </Button>
-              <button
-                type="button"
-                onClick={() => setStage("done")}
-                className="text-xs text-muted-foreground hover:text-foreground underline"
-              >
-                Skip (not recommended)
-              </button>
             </div>
           )}
 
-          {stage !== "passkey-register" && (
+          {stage === "cre-verifying" && (
+            <div className="flex items-center justify-center gap-2 py-2">
+              <Loader2 className="h-4 w-4 animate-spin text-primary" />
+              <span className="text-sm text-muted-foreground">
+                Registering on-chain…
+              </span>
+            </div>
+          )}
+
+          {stage !== "passkey-register" && stage !== "cre-verifying" && (
             <div className="flex gap-3">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setStep(1)}
-                disabled={isSubmitting || stage === "done"}
+                disabled={stage === "done" || stage === "uploading-cert"}
                 className="flex-1"
               >
                 <ArrowLeft className="h-4 w-4 mr-1" />
@@ -544,7 +736,7 @@ export function ProviderRegister() {
               ) : (
                 <Button
                   type="submit"
-                  disabled={isSubmitting || insufficientGas}
+                  disabled={stage === "uploading-cert"}
                   className="flex-[2]"
                 >
                   {stage === "uploading-cert" ? (
@@ -552,13 +744,6 @@ export function ProviderRegister() {
                       <Loader2 className="h-4 w-4 mr-1 animate-spin" />
                       Uploading cert…
                     </>
-                  ) : stage === "cre-verifying" ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                      Verifying…
-                    </>
-                  ) : insufficientGas ? (
-                    "Insufficient gas"
                   ) : (
                     <>
                       <Upload className="h-4 w-4 mr-1" />
@@ -569,21 +754,29 @@ export function ProviderRegister() {
               )}
             </div>
           )}
+        </form>
+      )}
 
-          {insufficientGas && stage === "idle" && (
-            <p className="text-xs text-amber-400 text-center">
-              You need AVAX for gas.{" "}
-              <a
-                href="https://faucet.avax.network"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline"
-              >
-                Get testnet AVAX
-              </a>
+      {/* Wallet info + Logout button */}
+      {!isSubmitting && stage !== "done" && (
+        <div className="flex flex-col items-center gap-1">
+          {account && (
+            <p className="text-xs text-muted-foreground font-mono">
+              Your wallet: {account.address.slice(0, 6)}…
+              {account.address.slice(-4)}
             </p>
           )}
-        </form>
+          <button
+            type="button"
+            onClick={() => {
+              if (wallet) disconnect(wallet);
+            }}
+            className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground hover:text-red-400 transition-colors w-full py-1"
+          >
+            <LogOut className="h-3 w-3" />
+            Sign out and use a different account
+          </button>
+        </div>
       )}
     </div>
   );

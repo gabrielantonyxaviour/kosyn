@@ -9,6 +9,7 @@ import { ArrowUp, Lock, Timer, Plus, MessageSquare, X } from "lucide-react";
 import { useAiSession } from "@/hooks/use-ai-session";
 import { triggerWorkflow } from "@/lib/cre";
 import { CreFeed } from "@/components/cre-feed";
+import { useCreLogs, truncHash, FUJI_EXPLORER } from "@/hooks/use-cre-logs";
 import { NillionProofBadge } from "@/components/nillion-proof-badge";
 import { MarkdownContent } from "@/components/markdown-content";
 import type {
@@ -49,6 +50,7 @@ export function PatientAiChat({ patientAddress }: { patientAddress: string }) {
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [showCre, setShowCre] = useState(false);
+  const { logs: creLogs, push: pushLog, clear: clearLogs } = useCreLogs();
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -242,10 +244,29 @@ export function PatientAiChat({ patientAddress }: { patientAddress: string }) {
 
   const handleAttest = async () => {
     setShowCre(true);
-    await triggerWorkflow("patient-ai-attest", {
+    clearLogs();
+    pushLog("INFO", "CRE workflow triggered");
+    pushLog("INFO", "Attesting AI session on-chain...");
+
+    const result = await triggerWorkflow("patient-ai-attest", {
       patientAddress,
       sessionSummary: `${messages.length} messages exchanged`,
     });
+
+    if (result.success) {
+      if (result.txHash) {
+        pushLog(
+          "OK",
+          `Attestation recorded`,
+          `${FUJI_EXPLORER}/${result.txHash}`,
+        );
+      } else {
+        pushLog("OK", "Attestation recorded");
+      }
+      pushLog("OK", "Workflow complete");
+    } else {
+      pushLog("ERR", result.error ?? "Attestation workflow failed");
+    }
   };
 
   const handleAuthorize = () => {
@@ -292,7 +313,7 @@ export function PatientAiChat({ patientAddress }: { patientAddress: string }) {
           Attest with Chainlink CRE
         </Button>
       )}
-      {showCre && <CreFeed workflow="patient-ai-attest" isActive={true} />}
+      {showCre && <CreFeed workflow="patient-ai-attest" logs={creLogs} />}
     </div>
   ) : null;
 

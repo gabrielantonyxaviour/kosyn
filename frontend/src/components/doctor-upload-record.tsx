@@ -14,8 +14,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Upload } from "lucide-react";
-import { createRecord } from "@/lib/demo-api";
+import { triggerWorkflow } from "@/lib/cre";
 import { CreFeed } from "@/components/cre-feed";
+import {
+  useCreLogs,
+  truncHash,
+  FUJI_EXPLORER,
+  IPFS_GATEWAY,
+} from "@/hooks/use-cre-logs";
 import { toast } from "sonner";
 import type { RecordType } from "@/hooks/use-records";
 
@@ -36,30 +42,54 @@ export function DoctorUploadRecord({
   const [label, setLabel] = useState("");
   const [content, setContent] = useState("");
   const [isUploading, setIsUploading] = useState(false);
-  const [creActive, setCreActive] = useState(false);
+  const { logs: creLogs, push: pushLog, clear: clearLogs } = useCreLogs();
 
   const handleUpload = async () => {
     if (!content.trim()) return;
     setIsUploading(true);
-    setCreActive(true);
+    clearLogs();
+    pushLog("INFO", "CRE workflow triggered");
+    pushLog("INFO", "Uploading encrypted blob to IPFS via Pinata...");
 
-    await createRecord({
+    const result = await triggerWorkflow("record-upload", {
       patientAddress,
       recordType,
-      templateType: "doctor-upload",
-      label: label || `${doctorName} — ${recordType}`,
-      createdBy: "doctor",
-      createdByAddress: doctorAddress,
-      formData: { content, consultationId },
+      encryptedData: JSON.stringify({ content, consultationId }),
     });
 
-    setTimeout(() => {
-      setCreActive(false);
+    if (!result.success) {
+      pushLog("ERR", result.error ?? "CRE workflow failed");
+      toast.error(
+        result.error ?? "CRE workflow failed. Service may be offline.",
+      );
       setIsUploading(false);
-      setContent("");
-      setLabel("");
-      toast.success("Record uploaded to patient's file");
-    }, 3000);
+      return;
+    }
+
+    const cid = (result.data?.cid ?? result.data?.ipfsCid) as
+      | string
+      | undefined;
+    if (cid) {
+      pushLog("OK", `CID stored: ${truncHash(cid)}`, `${IPFS_GATEWAY}/${cid}`);
+    } else {
+      pushLog("OK", "CID stored on IPFS");
+    }
+
+    if (result.txHash) {
+      pushLog(
+        "OK",
+        `Tx confirmed on Avalanche Fuji`,
+        `${FUJI_EXPLORER}/${result.txHash}`,
+      );
+    } else {
+      pushLog("OK", "Tx confirmed on Avalanche Fuji");
+    }
+
+    pushLog("OK", "Workflow complete");
+    setIsUploading(false);
+    setContent("");
+    setLabel("");
+    toast.success("Record uploaded to patient's file");
   };
 
   return (
@@ -116,7 +146,9 @@ export function DoctorUploadRecord({
           </Button>
         </CardContent>
       </Card>
-      {creActive && <CreFeed workflow="record-upload" isActive={creActive} />}
+      {creLogs.length > 0 && (
+        <CreFeed workflow="record-upload" logs={creLogs} />
+      )}
     </div>
   );
 }

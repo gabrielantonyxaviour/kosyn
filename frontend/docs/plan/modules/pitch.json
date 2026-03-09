@@ -81,7 +81,7 @@
             "Architecture": "Slide 3 title — technical architecture overview",
             "Chainlink CRE: Confidential HTTP + Vault DON + EVM Read/Write": "Slide 3, bullet 1 — CRE runtime capabilities used",
             "ACE PolicyEngine: On-chain HIPAA-equivalent access controls": "Slide 3, bullet 2 — smart contract access control layer",
-            "Gemini 2.0 Flash inside TEE: SOAP notes, medical codes, risk scoring": "Slide 3, bullet 3 — AI model running inside TEE for clinical analysis",
+            "Nillion nilAI (Gemma 3 27B) inside TEE: SOAP notes, medical codes, risk scoring": "Slide 3, bullet 3 — AI model running inside TEE for clinical analysis",
             "IPFS: Encrypted blobs only — never raw PHI on-chain": "Slide 3, bullet 4 — storage layer for encrypted health data",
             "How It Works": "Slide 4 title — step-by-step flow of the protocol",
             "1. Patient stores records — encrypted in TEE, hash on-chain": "Slide 4, step 1 — record upload and encryption flow",

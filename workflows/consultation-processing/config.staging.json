@@ -1,5 +1,5 @@
 {
-  "receiverAddress": "0x28a15D8daDaBE287F0368e47114Aa80Aa319C31A",
+  "receiverAddress": "0x32e8A68210639E20A490fc927AA458370A63C5F9",
   "gasLimit": 500000,
   "nillionBaseUrl": "https://api.nilai.nillion.network",
   "nillionModel": "google/gemma-3-27b-it"

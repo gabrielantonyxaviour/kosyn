@@ -1,5 +1,5 @@
 {
-  "dataMarketplaceAddress": "0x0000000000000000000000000000000000000000",
-  "healthRecordRegistryAddress": "0x28a15D8daDaBE287F0368e47114Aa80Aa319C31A",
+  "dataMarketplaceAddress": "0x43D7aedeC9D4e68B48EDB8aCD08Bc1fF1f085F66",
+  "healthRecordRegistryAddress": "0x32e8A68210639E20A490fc927AA458370A63C5F9",
   "pinataGatewayUrl": "https://gateway.pinata.cloud"
 }

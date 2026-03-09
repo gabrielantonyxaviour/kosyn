@@ -25,7 +25,12 @@ import {
   ADDRESSES,
   prepareContractCall,
 } from "@/lib/contracts";
-import { useActiveAccount, useSendTransaction } from "thirdweb/react";
+import {
+  useActiveAccount,
+  useSendTransaction,
+  useDisconnect,
+  useActiveWallet,
+} from "thirdweb/react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { format } from "date-fns";
@@ -40,6 +45,8 @@ import {
   CalendarIcon,
   Upload,
   Link2,
+  LogOut,
+  ExternalLink,
 } from "lucide-react";
 
 const ZERO_ADDR = "0x0000000000000000000000000000000000000000";
@@ -149,6 +156,8 @@ const stepDefs = [
 
 export function PatientOnboarding() {
   const account = useActiveAccount();
+  const wallet = useActiveWallet();
+  const { disconnect } = useDisconnect();
   const router = useRouter();
   const {
     register,
@@ -175,6 +184,7 @@ export function PatientOnboarding() {
   const [stageError, setStageError] = useState<string | null>(null);
   const [encryptedPreview, setEncryptedPreview] = useState<string | null>(null);
   const [ipfsCid, setIpfsCid] = useState<string | null>(null);
+  const [onchainTxHash, setOnchainTxHash] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const isCompleting =
@@ -260,7 +270,8 @@ export function PatientOnboarding() {
           method: "register",
           params: [cid, `0x${hashHex}` as `0x${string}`],
         });
-        await sendTx(tx);
+        const result = await sendTx(tx);
+        setOnchainTxHash(result.transactionHash);
       } catch (err) {
         setStage("error");
         setStageError(
@@ -540,6 +551,28 @@ export function PatientOnboarding() {
             </div>
           )}
 
+          {/* Wallet info + Logout button */}
+          {!isCompleting && stage !== "done" && (
+            <div className="flex flex-col items-center gap-1">
+              {account && (
+                <p className="text-xs text-muted-foreground font-mono">
+                  Your wallet: {account.address.slice(0, 6)}…
+                  {account.address.slice(-4)}
+                </p>
+              )}
+              <button
+                type="button"
+                onClick={() => {
+                  if (wallet) disconnect(wallet);
+                }}
+                className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground hover:text-red-400 transition-colors w-full py-1"
+              >
+                <LogOut className="h-3 w-3" />
+                Sign out and use a different account
+              </button>
+            </div>
+          )}
+
           {/* Step 3: Passkey */}
           {step === 3 && (
             <div className="space-y-4">
@@ -689,6 +722,22 @@ export function PatientOnboarding() {
                       icon={<Link2 className="h-3.5 w-3.5" />}
                       status={stageStatus(stage, "onchain")}
                     />
+                  )}
+                  {onchainTxHash && (
+                    <div className="ml-5 rounded bg-muted/40 border border-border px-2.5 py-1.5">
+                      <p className="text-[10px] text-muted-foreground font-mono mb-0.5">
+                        Transaction
+                      </p>
+                      <a
+                        href={`https://testnet.snowtrace.io/tx/${onchainTxHash}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[10px] font-mono text-primary hover:underline break-all inline-flex items-center gap-1"
+                      >
+                        {onchainTxHash.slice(0, 10)}…{onchainTxHash.slice(-8)}
+                        <ExternalLink className="h-2.5 w-2.5 shrink-0" />
+                      </a>
+                    </div>
                   )}
                   {stage === "error" && stageError && (
                     <p className="text-xs text-red-400 pt-1">{stageError}</p>

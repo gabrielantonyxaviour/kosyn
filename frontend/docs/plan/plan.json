@@ -9,7 +9,7 @@
       "auth": "Thirdweb Connect (email/social for patients, MetaMask for providers)",
       "ui": "shadcn/ui + Tailwind CSS v4",
       "stateManagement": "React Query + React useState",
-      "ai": "Claude Service (app-level), Gemini 2.0 Flash (CRE TEE)",
+      "ai": "Nillion nilAI — Gemma 3 27B (app-level + CRE TEE, cryptographic proof via secp256k1 signature)",
       "blockchain": "Foundry (Solidity ^0.8.19), Thirdweb SDK v5",
       "storage": "IPFS via Pinata (encrypted blobs)",
       "payments": "Stripe + KosynUSD (ERC-20)",
@@ -483,10 +483,10 @@
         "model": "sonnet (default), opus (complex)"
       },
       {
-        "name": "Gemini 2.0 Flash (CRE TEE)",
-        "provider": "Google AI inside CRE enclave",
-        "purpose": "Clinical analysis, SOAP notes, drug interactions — runs only inside TEE",
-        "model": "gemini-2.0-flash"
+        "name": "Nillion nilAI (CRE TEE)",
+        "provider": "Nillion network — AMD SEV-SNP + NVIDIA CC TEE enclave",
+        "purpose": "Clinical analysis, SOAP notes, drug interactions — runs only inside TEE with cryptographic proof",
+        "model": "google/gemma-3-27b-it"
       }
     ],
     "sharedServices": [

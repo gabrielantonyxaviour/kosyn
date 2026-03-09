@@ -8,9 +8,9 @@ import { CalendarDays, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useActiveAccount } from "thirdweb/react";
-import { useDemoPoll } from "@/hooks/use-demo-poll";
-import { getBookings } from "@/lib/demo-api";
-import type { DemoRecord } from "@/app/api/demo/store";
+import { useDoctorBookings, BOOKING_STATUS_LABELS } from "@/hooks/use-bookings";
+import { useProviderIsRegistered } from "@/hooks/use-provider-profile";
+import type { OnChainRecord } from "@/hooks/use-onchain-records";
 
 const PROVIDER_KEY = (address: string) =>
   `kosyn-provider:${address.toLowerCase()}`;
@@ -32,22 +32,23 @@ export default function ProviderPage() {
   const router = useRouter();
   const address = account?.address ?? "";
   const [verified, setVerified] = useState<boolean | null>(null);
-  const [selectedRecords, setSelectedRecords] = useState<DemoRecord[]>([]);
+  const [selectedRecords, setSelectedRecords] = useState<OnChainRecord[]>([]);
+  const { data: isOnChainRegistered, isLoading: registryLoading } =
+    useProviderIsRegistered(address || undefined);
 
   useEffect(() => {
-    if (!address) return;
-    const registered = !!localStorage.getItem(PROVIDER_KEY(address));
-    if (!registered) {
-      router.replace("/doctors/onboarding");
-    } else {
-      setVerified(true);
-    }
-  }, [address, router]);
+    if (!address || registryLoading) return;
 
-  const { data: bookings } = useDemoPoll(
-    () => (address ? getBookings(address, "doctor") : Promise.resolve([])),
-    3000,
-  );
+    if (isOnChainRegistered) {
+      setVerified(true);
+    } else {
+      // Clear stale localStorage from previous deployments
+      localStorage.removeItem(PROVIDER_KEY(address));
+      router.replace("/doctors/onboarding");
+    }
+  }, [address, router, isOnChainRegistered, registryLoading]);
+
+  const { bookings } = useDoctorBookings(address || undefined);
 
   if (!account || verified === null) {
     return (
@@ -57,9 +58,8 @@ export default function ProviderPage() {
     );
   }
 
-  const all = bookings || [];
   const today = todayString();
-  const todaysConsultations = all.filter((b) => b.date === today);
+  const todaysConsultations = bookings.filter((b) => b.date === today);
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-8 space-y-6">
@@ -93,7 +93,7 @@ export default function ProviderPage() {
               {todaysConsultations.map((b) => (
                 <Link
                   key={b.id}
-                  href={`/doctors/consultation/${b.consultationId}`}
+                  href={`/doctors/consultation/${b.id}`}
                   className="flex items-center justify-between rounded-lg border border-border px-3 py-2.5 transition-colors hover:bg-muted/50"
                 >
                   <div>
@@ -102,9 +102,11 @@ export default function ProviderPage() {
                   </div>
                   <Badge
                     variant="outline"
-                    className={statusColors[b.status] || ""}
+                    className={
+                      statusColors[BOOKING_STATUS_LABELS[b.status]] || ""
+                    }
                   >
-                    {b.status}
+                    {BOOKING_STATUS_LABELS[b.status]}
                   </Badge>
                 </Link>
               ))}
@@ -112,18 +114,18 @@ export default function ProviderPage() {
           )}
 
           {/* All bookings below if any outside today */}
-          {all.length > todaysConsultations.length && (
+          {bookings.length > todaysConsultations.length && (
             <>
               <h2 className="text-sm font-medium text-muted-foreground pt-2">
                 All Consultations
               </h2>
               <div className="space-y-2">
-                {all
+                {bookings
                   .filter((b) => b.date !== today)
                   .map((b) => (
                     <Link
                       key={b.id}
-                      href={`/doctors/consultation/${b.consultationId}`}
+                      href={`/doctors/consultation/${b.id}`}
                       className="flex items-center justify-between rounded-lg border border-border px-3 py-2.5 transition-colors hover:bg-muted/50"
                     >
                       <div>
@@ -134,9 +136,11 @@ export default function ProviderPage() {
                       </div>
                       <Badge
                         variant="outline"
-                        className={statusColors[b.status] || ""}
+                        className={
+                          statusColors[BOOKING_STATUS_LABELS[b.status]] || ""
+                        }
                       >
-                        {b.status}
+                        {BOOKING_STATUS_LABELS[b.status]}
                       </Badge>
                     </Link>
                   ))}

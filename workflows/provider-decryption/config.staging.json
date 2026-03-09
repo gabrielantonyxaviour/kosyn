@@ -1,9 +1,9 @@
 {
-  "receiverAddress": "0x28a15D8daDaBE287F0368e47114Aa80Aa319C31A",
+  "receiverAddress": "0x32e8A68210639E20A490fc927AA458370A63C5F9",
   "gasLimit": 500000,
-  "consentContractAddress": "0xBfbb4E6b0f866d0CF5C9c01219577A60237Db156",
-  "registryAddress": "0x28a15D8daDaBE287F0368e47114Aa80Aa319C31A",
-  "dataMarketplaceAddress": "0x0000000000000000000000000000000000000000",
+  "consentContractAddress": "0xb99D2E2C46d0F962f81cc9f3003Fa4709Fe5E564",
+  "registryAddress": "0x32e8A68210639E20A490fc927AA458370A63C5F9",
+  "dataMarketplaceAddress": "0x43D7aedeC9D4e68B48EDB8aCD08Bc1fF1f085F66",
   "eventTopic": "0x0749293cdd24194bfc5a2b093e1784cdba8b1f511563750caa49bb0e4581f420",
   "pinataGateway": "https://gateway.pinata.cloud"
 }

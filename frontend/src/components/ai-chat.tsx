@@ -8,7 +8,12 @@ import { Send } from "lucide-react";
 import Image from "next/image";
 import { NillionProofBadge } from "@/components/nillion-proof-badge";
 import { useActiveAccount } from "thirdweb/react";
-import type { DemoRecord } from "@/app/api/demo/store";
+interface ContextRecord {
+  id: number;
+  recordType: string;
+  label?: string;
+  formData?: Record<string, string>;
+}
 
 interface Message {
   role: "user" | "assistant";
@@ -17,7 +22,7 @@ interface Message {
 }
 
 interface AiChatProps {
-  contextRecords?: DemoRecord[];
+  contextRecords?: ContextRecord[];
 }
 
 export function AiChat({ contextRecords = [] }: AiChatProps) {

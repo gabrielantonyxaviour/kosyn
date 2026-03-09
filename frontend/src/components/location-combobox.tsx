@@ -22,15 +22,19 @@ import { countries, getCountryByCode, type Region } from "@/lib/locations";
 interface LocationComboboxProps {
   selectedCountry: string;
   selectedRegion: string;
+  city?: string;
   onCountryChange: (code: string) => void;
   onRegionChange: (code: string) => void;
+  onCityChange?: (city: string) => void;
 }
 
 export function LocationCombobox({
   selectedCountry,
   selectedRegion,
+  city,
   onCountryChange,
   onRegionChange,
+  onCityChange,
 }: LocationComboboxProps) {
   const [countryOpen, setCountryOpen] = useState(false);
   const [regionOpen, setRegionOpen] = useState(false);
@@ -122,6 +126,7 @@ export function LocationCombobox({
         <span className="text-xs text-muted-foreground mb-1.5 block">
           State / Region
         </span>
+
         <Popover open={regionOpen} onOpenChange={setRegionOpen}>
           <PopoverTrigger asChild>
             <Button
@@ -192,6 +197,25 @@ export function LocationCombobox({
           </PopoverContent>
         </Popover>
       </div>
+      {/* City input */}
+      {onCityChange && (
+        <div className="flex-1">
+          <span className="text-xs text-muted-foreground mb-1.5 block">
+            City
+          </span>
+          <div className="flex h-9 w-full items-center rounded-md border border-input bg-background px-3">
+            <MapPin className="h-3.5 w-3.5 shrink-0 text-muted-foreground mr-2" />
+            <input
+              type="text"
+              value={city ?? ""}
+              onChange={(e) => onCityChange(e.target.value)}
+              disabled={!selectedRegion}
+              placeholder={selectedRegion ? "Enter city" : "Select state first"}
+              className="flex-1 bg-transparent text-sm placeholder:text-muted-foreground focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

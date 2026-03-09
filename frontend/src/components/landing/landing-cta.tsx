@@ -196,7 +196,7 @@ export default function LandingCTA() {
                   lineHeight: 0.95,
                 }}
               >
-                PROVIDER
+                DOCTOR
               </div>
               <p
                 style={{
@@ -232,7 +232,7 @@ export default function LandingCTA() {
                     borderRadius: "7px",
                   }}
                 >
-                  Register as Provider →
+                  Register as Doctor →
                 </div>
               </Link>
             </div>
@@ -336,44 +336,6 @@ export default function LandingCTA() {
               </Link>
             </div>
           </div>
-        </div>
-
-        {/* HIPAA trust badge */}
-        <div className="mt-8 flex items-center justify-center gap-6">
-          <div
-            style={{
-              border: "1px solid rgba(255,255,255,0.06)",
-              borderRadius: "10px",
-              overflow: "hidden",
-              width: "80px",
-              height: "60px",
-              opacity: 0.5,
-              flexShrink: 0,
-            }}
-          >
-            <Image
-              src="/assets/hipaa-stamp.jpg"
-              alt="HIPAA Compliant"
-              width={80}
-              height={60}
-              className="w-full h-full object-cover"
-              style={{ filter: "grayscale(100%)" }}
-            />
-          </div>
-          <span
-            style={{
-              fontFamily: "var(--font-mono-custom)",
-              fontSize: "11px",
-              color: "#333",
-              letterSpacing: "0.12em",
-              textTransform: "uppercase",
-              maxWidth: "280px",
-              lineHeight: 1.6,
-            }}
-          >
-            HIPAA-equivalent compliance enforced by Chainlink CRE enclave
-            attestation
-          </span>
         </div>
       </div>
 

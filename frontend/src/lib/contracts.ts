@@ -16,6 +16,8 @@ export const ADDRESSES = {
     "0x0000000000000000000000000000000000000000") as `0x${string}`,
   hipaaComplianceRegistry: (process.env.NEXT_PUBLIC_HIPAA_COMPLIANCE_REGISTRY ||
     "0x0000000000000000000000000000000000000000") as `0x${string}`,
+  bookingRegistry: (process.env.NEXT_PUBLIC_BOOKING_REGISTRY ||
+    "0x0000000000000000000000000000000000000000") as `0x${string}`,
 } as const;
 
 // Simplified ABIs — only the functions we use
@@ -553,6 +555,130 @@ export function getHIPAAComplianceRegistry() {
     chain,
     address: ADDRESSES.hipaaComplianceRegistry,
     abi: HIPAA_COMPLIANCE_REGISTRY_ABI,
+  });
+}
+
+export const BOOKING_REGISTRY_ABI = [
+  {
+    type: "function",
+    name: "createBooking",
+    inputs: [
+      { name: "doctor", type: "address" },
+      { name: "fee", type: "uint256" },
+      { name: "metadataCid", type: "string" },
+    ],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "updateStatus",
+    inputs: [
+      { name: "id", type: "uint256" },
+      { name: "status", type: "uint8" },
+    ],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "setRequestedRecordTypes",
+    inputs: [
+      { name: "id", type: "uint256" },
+      { name: "types", type: "uint8[]" },
+    ],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "completeConsultation",
+    inputs: [
+      { name: "id", type: "uint256" },
+      { name: "resultCid", type: "string" },
+    ],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "getBooking",
+    inputs: [{ name: "id", type: "uint256" }],
+    outputs: [
+      {
+        name: "",
+        type: "tuple",
+        components: [
+          { name: "patient", type: "address" },
+          { name: "doctor", type: "address" },
+          { name: "fee", type: "uint256" },
+          { name: "status", type: "uint8" },
+          { name: "metadataCid", type: "string" },
+          { name: "resultCid", type: "string" },
+          { name: "requestedRecordTypes", type: "uint8[]" },
+          { name: "createdAt", type: "uint256" },
+          { name: "completedAt", type: "uint256" },
+        ],
+      },
+    ],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "getPatientBookings",
+    inputs: [{ name: "patient", type: "address" }],
+    outputs: [{ name: "", type: "uint256[]" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "getDoctorBookings",
+    inputs: [{ name: "doctor", type: "address" }],
+    outputs: [{ name: "", type: "uint256[]" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "bookingCount",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256" }],
+    stateMutability: "view",
+  },
+  {
+    type: "event",
+    name: "BookingCreated",
+    inputs: [
+      { name: "id", type: "uint256", indexed: true },
+      { name: "patient", type: "address", indexed: true },
+      { name: "doctor", type: "address", indexed: true },
+      { name: "fee", type: "uint256", indexed: false },
+      { name: "metadataCid", type: "string", indexed: false },
+    ],
+  },
+  {
+    type: "event",
+    name: "StatusUpdated",
+    inputs: [
+      { name: "id", type: "uint256", indexed: true },
+      { name: "status", type: "uint8", indexed: false },
+    ],
+  },
+  {
+    type: "event",
+    name: "ConsultationCompleted",
+    inputs: [
+      { name: "id", type: "uint256", indexed: true },
+      { name: "resultCid", type: "string", indexed: false },
+    ],
+  },
+] as const;
+
+export function getBookingRegistry() {
+  return getContract({
+    client: getClient(),
+    chain,
+    address: ADDRESSES.bookingRegistry,
+    abi: BOOKING_REGISTRY_ABI,
   });
 }
 

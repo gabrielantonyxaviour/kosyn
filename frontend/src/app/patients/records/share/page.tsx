@@ -101,14 +101,6 @@ export default function ShareDataPage() {
         await sendTx(keyTx);
       }
 
-      // Step 4: Update the demo store opt-in so the aggregation layer can find records
-      setStepLabel("Finalizing data sharing setup...");
-      await fetch(`/api/demo?action=opt-in-data-sharing`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ address: account.address }),
-      });
-
       toast.success("Data sharing enabled — you'll earn KUSD for each query");
       setEnabled(true);
     } catch (e) {

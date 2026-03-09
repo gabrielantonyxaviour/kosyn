@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { amount, doctorName, doctorAddress } = parsed.data;
+    const { amount, doctorName, doctorAddress, walletAddress } = parsed.data;
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
@@ -38,12 +38,13 @@ export async function POST(req: NextRequest) {
         },
       ],
       mode: "payment",
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/book?payment=success&amount=${amount}&doctor=${encodeURIComponent(doctorName)}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/book?payment=cancelled`,
+      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/patients/consultations?payment=success&amount=${amount}&session={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/patients/consultations?payment=cancelled`,
       metadata: {
         type: "consultation",
         doctorName,
         doctorAddress,
+        walletAddress,
         amount: String(amount),
       },
     });

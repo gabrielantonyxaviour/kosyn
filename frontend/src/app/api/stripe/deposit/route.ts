@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
         },
       ],
       mode: "payment",
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/patients/deposit?payment=success&amount=${amount}`,
+      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/patients/deposit?payment=success&amount=${amount}&session={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/patients/deposit?payment=cancelled`,
       metadata: {
         type: "deposit",

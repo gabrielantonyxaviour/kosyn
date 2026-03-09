@@ -65,7 +65,7 @@ function WalletDropdown({ isProvider }: { isProvider: boolean }) {
   const formatted = kusdLoading
     ? ""
     : balance
-      ? (Number(balance) / 1e18).toFixed(2)
+      ? (Number(balance) / 1e6).toFixed(2)
       : "0.00";
   const chainName =
     activeChain?.id === 43113 ? "Avax Fuji" : `Chain ${activeChain?.id ?? "?"}`;

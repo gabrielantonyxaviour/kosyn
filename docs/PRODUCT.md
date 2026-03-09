@@ -54,7 +54,7 @@ Chainlink's CRE (Chainlink Runtime Environment) with Confidential Compute solves
 | Problem | CRE Solution |
 |---------|-------------|
 | Data must be private | **Confidential HTTP + Vault DON**: Health records are encrypted, stored off-chain, and processed exclusively inside TEE enclaves. CRE nodes, DON operators, and blockchain validators never see raw data. |
-| Data needs intelligence | **HTTP Client inside TEE**: AI models (Gemini) analyze health records inside the enclave. Drug interaction checks, anomaly detection, and risk scoring happen on encrypted data. The AI output exits the enclave; the raw data never does. |
+| Data needs intelligence | **HTTP Client inside TEE**: AI models (Nillion nilAI (Gemma 3 27B)) analyze health records inside the enclave. Drug interaction checks, anomaly detection, and risk scoring happen on encrypted data. The AI output exits the enclave; the raw data never does. |
 | Data must be portable | **CCIP**: Encrypted record references are transferred between chains via Chainlink Cross-Chain Interoperability Protocol. ACE policies travel with the data. |
 | Data must be compliant | **ACE (Automated Compliance Engine)**: HIPAA-equivalent access policies are enforced at the smart contract level. Allowlists, time-limited access, emergency overrides, geographic restrictions, rate limits, and immutable audit logs -- all on-chain. |
 
@@ -137,7 +137,7 @@ Chainlink's CRE (Chainlink Runtime Environment) with Confidential Compute solves
 **How it works:**
 
 1. CRE workflow decrypts patient records inside the TEE using Confidential HTTP (Vault DON key reconstruction).
-2. Inside the TEE, the workflow uses HTTP Client to query the AI model (Gemini) with a structured prompt containing the health data.
+2. Inside the TEE, the workflow uses HTTP Client to query the AI model (Nillion nilAI) with a structured prompt containing the health data.
 3. The AI model returns structured JSON output (interaction matrix, anomaly flags, summary, risk scores).
 4. The AI output is encrypted back inside the TEE.
 5. The encrypted AI report hash is stored on-chain. The patient is notified.
@@ -403,7 +403,7 @@ Provider App               On-Chain                   CRE Workflow
                                                                 |
                                                                 v
                                                           HTTP Client (TEE):
-                                                            - Query Gemini AI
+                                                            - Query Nillion nilAI
                                                             - Drug interactions
                                                             - Anomaly detection
                                                             - Health summary
@@ -486,8 +486,8 @@ export async function onAccessRequested(runtime: any, payload: any) {
   });
 
   // Step 4: AI analysis inside TEE
-  const geminiApiKey = runtime.getSecret("GEMINI_API_KEY");
-  const aiResult = await analyzeWithGemini(runtime, encryptedRecord, geminiApiKey);
+  const nillionApiKey = runtime.getSecret("NILLION_API_KEY");
+  const aiResult = await analyzeWithNilAI(runtime, encryptedRecord, nillionApiKey);
 
   // Step 5: Write approved access + AI report on-chain
   const reportData = encodeAbiParameters(
@@ -530,8 +530,8 @@ Cron Schedule              CRE Workflow                     External
                         |
                         v
                   HTTP Client (inside TEE):
-                    - Send structured prompt to        <---> Gemini AI API
-                      Gemini with health data
+                    - Send structured prompt to        <---> Nillion nilAI API
+                      Nillion nilAI with health data
                     - Request: drug interactions,
                       anomaly detection, risk score
                     - Receive structured JSON response
@@ -550,7 +550,7 @@ Cron Schedule              CRE Workflow                     External
                     - Notify patient (on-chain event)
 ```
 
-**Gemini prompt structure (inside TEE):**
+**Nillion nilAI prompt structure (inside TEE):**
 
 ```json
 {
@@ -695,7 +695,7 @@ Patient App               On-Chain                   CRE Workflow
 | **Log Trigger** | Provider Access, Cross-Chain Transfer, Consent Management, Emergency Access | React to on-chain events (access requests, consent changes, transfers) |
 | **Cron Trigger** | AI Health Analysis | Periodic health checks (daily/weekly) |
 | **Confidential HTTP** | Record Upload, Provider Access, AI Health Analysis, Cross-Chain Transfer | Encrypt/decrypt health records inside TEE; API secrets stay in Vault DON |
-| **HTTP Client** | Record Upload (IPFS), AI Health Analysis (Gemini), Provider Access (Gemini) | Upload blobs to IPFS, query AI models inside TEE |
+| **HTTP Client** | Record Upload (IPFS), AI Health Analysis (Nillion nilAI), Provider Access (Nillion nilAI) | Upload blobs to IPFS, query AI models inside TEE |
 | **EVM Read** | Provider Access, Cross-Chain Transfer, Consent Management | Check ACE policies, read patient consents, verify provider registration |
 | **EVM Write** | All workflows | Store hashes, log access, update policies, deliver encrypted results |
 | **CCIP** | Cross-Chain Transfer | Transfer encrypted record references between chains |
@@ -1601,16 +1601,16 @@ contract KosynExtractor is IExtractor {
 
 **Hackathon recommendation:** Use IPFS via Pinata for the demo. Mention Arweave as the production storage layer.
 
-### 7.2 Gemini AI -- Clinical Analysis Inside TEE
+### 7.2 Nillion nilAI -- Clinical Analysis Inside TEE
 
 **Purpose:** Perform drug interaction checks, anomaly detection, health summaries, and risk scoring on patient data. All AI inference happens inside the TEE enclave via HTTP Client within a Confidential HTTP session.
 
-**Model:** Gemini 2.0 Flash (free tier with billing setup in Google AI Studio).
+**Model:** Nillion nilAI — Gemma 3 27B (google/gemma-3-27b-it) running inside AMD SEV-SNP + NVIDIA CC TEE.
 
 **Integration pattern:**
 - CRE workflow decrypts patient data inside TEE.
 - Constructs a structured prompt with health data (no patient identifiers).
-- Sends to Gemini via HTTP Client with `cacheSettings` to prevent duplicate DON calls.
+- Sends to Nillion nilAI via HTTP Client with `cacheSettings` to prevent duplicate DON calls.
 - Receives structured JSON response.
 - Encrypts the AI output back inside TEE.
 
@@ -1643,7 +1643,7 @@ CCIP Message {
 
 **Key types stored:**
 - Per-record AES keys (used to encrypt/decrypt individual health records).
-- AI API credentials (Gemini API key).
+- AI API credentials (Nillion API key).
 - IPFS gateway credentials.
 
 ### 7.6 Thirdweb -- Wallet Connection and Gas Sponsorship
@@ -1735,7 +1735,7 @@ CCIP Message {
 ### Unit Economics
 
 - **Cost per record upload:** IPFS storage (~$0.001) + CRE workflow gas (~$0.05 Sepolia, ~$0.50 mainnet) + Vault DON key storage (included in CRE).
-- **Cost per AI analysis:** Gemini API call (~$0.002 per analysis on free tier) + CRE workflow gas.
+- **Cost per AI analysis:** Nillion nilAI call + CRE workflow gas.
 - **Cost per CCIP transfer:** CCIP fee (~0.1-0.5 LINK per message) + gas on both chains.
 - **Thirdweb gas sponsorship:** Metered, ~$0.01-0.05 per patient transaction.
 
@@ -1771,7 +1771,7 @@ The hackathon submission must be realistic for a 2-4 week build period. Below is
 |----------|---------|-------------|----------|
 | **Record Upload** | HTTP Trigger | Confidential HTTP (encrypt), HTTP Client (IPFS upload), EVM Write (store hash) | MUST HAVE |
 | **Provider Access** | Log Trigger | EVM Read (check consent), Confidential HTTP (decrypt + AI), EVM Write (log access) | MUST HAVE |
-| **AI Health Analysis** | Cron Trigger | Confidential HTTP (decrypt), HTTP Client (Gemini AI), EVM Write (store report hash) | NICE TO HAVE (can merge with Provider Access) |
+| **AI Health Analysis** | Cron Trigger | Confidential HTTP (decrypt), HTTP Client (Nillion nilAI), EVM Write (store report hash) | NICE TO HAVE (can merge with Provider Access) |
 
 **Hackathon simplification:** Workflows 2 and 3 can be combined into a single workflow. When a provider requests access, the workflow decrypts, runs AI, encrypts the result, and delivers it. The Cron-based periodic analysis can be mentioned as a roadmap feature.
 
@@ -1831,7 +1831,7 @@ kosyn-ai/
     provider-access/
       main.ts
       logCallback.ts
-      gemini.ts
+      nillion.ts
       workflow.yaml
       config.staging.json
     project.yaml
@@ -1933,7 +1933,7 @@ Most AI medical tools are black boxes. Kosyn AI is the first system where the AI
 
 1. **Patient uploads health data** -- drag-and-drop lab results, vitals, imaging reports into the frontend. Thirdweb Connect handles signing.
 2. **CRE processes in TEE** -- Confidential HTTP workflow encrypts the record inside the enclave. On-chain, only a hash is stored. The raw data never touches a public node.
-3. **AI diagnosis with attestation** -- Gemini 2.0 Flash runs inside the TEE enclave. Kite AI PAI attestation is generated: model version, timestamp, accuracy score. The patient sees "Analyzed by Kite AI Agent v2.3.1 -- 94.2% diagnostic accuracy, 847 prior cases." This attestation is on-chain.
+3. **AI diagnosis with attestation** -- Nillion nilAI (Gemma 3 27B) runs inside the TEE enclave. Kite AI PAI attestation is generated: model version, timestamp, accuracy score. The patient sees "Analyzed by Kite AI Agent v2.3.1 -- 94.2% diagnostic accuracy, 847 prior cases." This attestation is on-chain.
 4. **Payment in KUSD** -- Provider receives KUSD for the consultation. If an insurance payout is triggered by the diagnosis, the ACE policy verifies eligibility and settlement lands in patient's wallet within the same transaction.
 5. **Patient owns the keys** -- Thirdweb Connect wallet holds the decryption key. The patient can revoke provider access, export records, or transfer to a new provider -- all without asking Kosyn AI for permission.
 
@@ -1964,7 +1964,7 @@ This is the strongest possible privacy track submission because the product lite
 ### Secondary Track: AI
 
 **Why Kosyn AI qualifies:** AI is deeply integrated into the clinical workflow:
-- Drug interaction detection via Gemini inside TEE.
+- Drug interaction detection via Nillion nilAI inside TEE.
 - Anomaly detection on historical lab results.
 - Health summary generation for providers.
 - Risk scoring (cardiovascular, metabolic, respiratory, oncological).

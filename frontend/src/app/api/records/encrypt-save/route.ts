@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { addRecord } from "@/app/api/demo/store";
 
 /**
  * POST /api/records/encrypt-save
  *
- * Server-side AES-256-GCM encryption + IPFS upload + DemoRecord creation.
- * Simulates what the CRE TEE would do in production.
+ * Server-side AES-256-GCM encryption + IPFS upload.
+ * On-chain record creation is handled by the CRE record-upload workflow.
  */
 export async function POST(req: NextRequest) {
   const body = (await req.json()) as {
@@ -107,22 +106,5 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Create DemoRecord in store
-  const record = addRecord({
-    patientAddress,
-    recordType: "consultation",
-    templateType: "consultation-summary",
-    label: label ?? `Consultation — ${new Date().toLocaleDateString()}`,
-    ipfsCid,
-    txHash: `0x${Date.now().toString(16)}${Math.random().toString(16).slice(2, 10)}`,
-    createdBy: "doctor",
-    createdByAddress: doctorAddress,
-    formData: {
-      consultationId: consultationId ?? "",
-      encryptedCid: ipfsCid,
-      encryptionAlg: "AES-256-GCM",
-    },
-  });
-
-  return NextResponse.json({ cid: ipfsCid, recordId: record.id });
+  return NextResponse.json({ cid: ipfsCid });
 }

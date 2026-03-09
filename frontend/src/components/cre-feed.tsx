@@ -2,84 +2,27 @@
 
 import { useState, useEffect, useRef } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Cpu, Info, ArrowRight } from "lucide-react";
-import { getWorkflowSteps } from "@/lib/cre";
+import { Cpu, Info, ExternalLink } from "lucide-react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import type { LogLine } from "@/hooks/use-cre-logs";
 
 interface CreFeedProps {
   workflow: string;
+  /** Externally managed logs — when provided, the feed renders these and skips internal simulation. */
+  logs?: LogLine[];
+  /** @deprecated Only used when `logs` is not provided (legacy simulation mode). */
   isActive?: boolean;
-}
-
-type LogLine = {
-  id: number;
-  time: string;
-  level: "INFO" | "OK" | "ERR";
-  message: string;
-};
-
-function ts() {
-  return new Date().toLocaleTimeString("en-US", {
-    hour12: false,
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
 }
 
 const levelColors: Record<string, string> = {
   INFO: "text-blue-400",
   OK: "text-emerald-400",
   ERR: "text-red-400",
-};
-
-const stepLogMap: Record<string, [string, string]> = {
-  encrypt: [
-    "Deriving AES-256-GCM key via WebAuthn PRF...",
-    "Payload encrypted client-side",
-  ],
-  ipfs: [
-    "Uploading encrypted blob to IPFS via Pinata...",
-    "CID stored: Qm3xK9...f72a",
-  ],
-  onchain: [
-    "Writing CID hash to HealthRecordRegistry...",
-    "Tx confirmed on Avalanche Fuji",
-  ],
-  pii: [
-    "Stripping PII from transcript (HIPAA §164.514)...",
-    "18 identifiers removed",
-  ],
-  ai: [
-    "Sending de-identified data to Nillion nilAI (TEE)...",
-    "SOAP note generated",
-  ],
-  consent: [
-    "Verifying consent on PatientConsent contract...",
-    "Access granted on-chain",
-  ],
-  verify: ["Verifying payment amount...", "Payment verified"],
-  mint: ["Minting KUSD via CRE EVM Write...", "KUSD minted"],
-  transfer: ["Transferring KUSD to provider...", "Transfer complete"],
-  register: [
-    "Registering provider on ProviderRegistry...",
-    "Provider registered",
-  ],
-  decrypt: ["Decrypting records inside TEE enclave...", "Records decrypted"],
-  anonymize: [
-    "Anonymizing (k-anonymity + l-diversity)...",
-    "Anonymization complete",
-  ],
-  aggregate: ["Computing aggregate statistics...", "Statistics ready"],
-  distribute: [
-    "Distributing KUSD to data contributors...",
-    "Distribution complete",
-  ],
 };
 
 const CRE_STEPS = [
@@ -101,47 +44,11 @@ const CRE_STEPS = [
   },
 ];
 
-let logCounter = 0;
-
-export function CreFeed({ workflow, isActive = false }: CreFeedProps) {
-  const [logs, setLogs] = useState<LogLine[]>([]);
+export function CreFeed({ workflow, logs: externalLogs }: CreFeedProps) {
   const [showInfo, setShowInfo] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  const push = (level: LogLine["level"], message: string) => {
-    setLogs((prev) => [
-      ...prev,
-      { id: logCounter++, time: ts(), level, message },
-    ]);
-  };
-
-  useEffect(() => {
-    if (!isActive) return;
-
-    setLogs([]);
-    const steps = getWorkflowSteps(workflow);
-    let i = 0;
-
-    push("INFO", "CRE workflow triggered");
-
-    const interval = setInterval(() => {
-      if (i >= steps.length) {
-        push("OK", "Workflow complete");
-        clearInterval(interval);
-        return;
-      }
-      const step = steps[i];
-      const [startMsg, doneMsg] = stepLogMap[step.id] ?? [
-        `Processing ${step.id}...`,
-        `${step.id} done`,
-      ];
-      push("INFO", startMsg);
-      setTimeout(() => push("OK", doneMsg), 900);
-      i++;
-    }, 1800);
-
-    return () => clearInterval(interval);
-  }, [isActive, workflow]);
+  const logs = externalLogs ?? [];
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -167,7 +74,7 @@ export function CreFeed({ workflow, isActive = false }: CreFeedProps) {
           <div className="p-3 font-mono text-xs space-y-1">
             {logs.length === 0 && (
               <span className="text-muted-foreground">
-                Waiting for upload...
+                Waiting for workflow...
               </span>
             )}
             {logs.map((l) => (
@@ -176,7 +83,19 @@ export function CreFeed({ workflow, isActive = false }: CreFeedProps) {
                 <span className={`shrink-0 w-6 ${levelColors[l.level]}`}>
                   {l.level}
                 </span>
-                <span className="text-foreground/80">{l.message}</span>
+                {l.href ? (
+                  <a
+                    href={l.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-foreground/80 underline decoration-muted-foreground/40 underline-offset-2 hover:text-primary hover:decoration-primary transition-colors inline-flex items-center gap-1"
+                  >
+                    {l.message}
+                    <ExternalLink className="h-2.5 w-2.5 shrink-0" />
+                  </a>
+                ) : (
+                  <span className="text-foreground/80">{l.message}</span>
+                )}
               </div>
             ))}
             <div ref={bottomRef} />

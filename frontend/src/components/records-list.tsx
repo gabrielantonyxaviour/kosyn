@@ -21,7 +21,10 @@ import {
   Wifi,
 } from "lucide-react";
 import { format } from "date-fns";
-import { useDemoRecords, type RecordType } from "@/hooks/use-records";
+import {
+  useOnChainRecords,
+  type RecordType,
+} from "@/hooks/use-onchain-records";
 import { PasskeyDecrypt } from "./passkey-decrypt";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -62,7 +65,7 @@ const filters: RecordType[] = [
 
 export function RecordsList() {
   const account = useActiveAccount();
-  const { records, isLoading } = useDemoRecords(account?.address);
+  const { records, isLoading } = useOnChainRecords(account?.address);
   const [activeFilter, setActiveFilter] = useState<RecordType | "all">("all");
   const router = useRouter();
 
@@ -156,7 +159,7 @@ export function RecordsList() {
                       <div className="flex items-center gap-2">
                         <Icon className="h-4 w-4 text-muted-foreground" />
                         <span className="font-medium">
-                          {record.label || `Record #${record.id}`}
+                          {`${cfg.label} Record #${record.id}`}
                         </span>
                       </div>
                     </TableCell>

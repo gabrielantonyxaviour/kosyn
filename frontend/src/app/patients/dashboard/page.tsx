@@ -12,38 +12,64 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useActiveAccount } from "thirdweb/react";
-import { useDemoPoll } from "@/hooks/use-demo-poll";
-import { getBookings, getConsents, updateBooking } from "@/lib/demo-api";
+import {
+  useActiveAccount,
+  useReadContract,
+  useSendTransaction,
+} from "thirdweb/react";
+import { prepareContractCall } from "thirdweb";
+import {
+  usePatientBookings,
+  BOOKING_STATUS_LABELS,
+} from "@/hooks/use-bookings";
+import { getBookingRegistry, getPatientRegistry } from "@/lib/contracts";
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+import { Loader2 } from "lucide-react";
 import { PatientAiChat } from "@/components/patient-ai-chat";
 
-const statusColors: Record<string, string> = {
-  booked: "bg-blue-500/10 text-blue-400 border-blue-500/20",
-  "access-requested": "bg-amber-500/10 text-amber-400 border-amber-500/20",
-  "access-granted": "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
-  "in-session": "bg-green-500/10 text-green-400 border-green-500/20",
-  completed: "bg-muted text-muted-foreground",
+const statusColors: Record<number, string> = {
+  0: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+  1: "bg-amber-500/10 text-amber-400 border-amber-500/20",
+  2: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+  3: "bg-green-500/10 text-green-400 border-green-500/20",
+  4: "bg-muted text-muted-foreground",
 };
 
 export default function DashboardPage() {
   const account = useActiveAccount();
   const router = useRouter();
   const address = account?.address ?? "";
+  const { mutateAsync: sendTx } = useSendTransaction();
 
-  const { data: bookings, refresh: refreshBookings } = useDemoPoll(
-    () => (address ? getBookings(address, "patient") : Promise.resolve([])),
-    3000,
-  );
+  const { data: isRegistered, isLoading: registryLoading } = useReadContract({
+    contract: getPatientRegistry(),
+    method: "isRegistered",
+    params: [
+      (address ||
+        "0x0000000000000000000000000000000000000000") as `0x${string}`,
+    ],
+    queryOptions: { enabled: !!address },
+  });
 
-  const { data: consents } = useDemoPoll(
-    () => (address ? getConsents(address) : Promise.resolve([])),
-    5000,
-  );
+  useEffect(() => {
+    if (!address || registryLoading) return;
+    if (!isRegistered) {
+      router.replace("/patients/onboarding");
+    }
+  }, [address, isRegistered, registryLoading, router]);
 
-  const accessRequests = (bookings || []).filter(
-    (b) => b.status === "access-requested",
-  );
+  const { bookings, refetch: refreshBookings } = usePatientBookings(address);
+
+  const accessRequests = bookings.filter((b) => b.status === 1);
+
+  if (!address || registryLoading || !isRegistered) {
+    return (
+      <main className="mx-auto max-w-5xl px-4 py-24 flex items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </main>
+    );
+  }
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-8 space-y-6">
@@ -55,7 +81,12 @@ export default function DashboardPage() {
           patientAddress={address}
           onGranted={refreshBookings}
           onDeny={async () => {
-            await updateBooking(b.id, "booked");
+            const tx = prepareContractCall({
+              contract: getBookingRegistry(),
+              method: "updateStatus",
+              params: [BigInt(b.id), 0],
+            });
+            await sendTx(tx);
             refreshBookings();
           }}
         />
@@ -84,7 +115,7 @@ export default function DashboardPage() {
             <h2 className="text-sm font-medium text-muted-foreground mb-2 shrink-0">
               Consultations
             </h2>
-            {!bookings || bookings.length === 0 ? (
+            {bookings.length === 0 ? (
               <div className="rounded-lg border border-border p-6 text-center flex-1 flex items-center justify-center">
                 <p className="text-sm text-muted-foreground">
                   No consultations yet.
@@ -106,9 +137,7 @@ export default function DashboardPage() {
                         key={b.id}
                         className="cursor-pointer hover:bg-muted/50"
                         onClick={() =>
-                          router.push(
-                            `/patients/consultation/${b.consultationId}`,
-                          )
+                          router.push(`/patients/consultation/${b.id}`)
                         }
                       >
                         <TableCell className="font-medium text-xs">
@@ -122,7 +151,7 @@ export default function DashboardPage() {
                             variant="outline"
                             className={`text-[10px] ${statusColors[b.status] || ""}`}
                           >
-                            {b.status}
+                            {BOOKING_STATUS_LABELS[b.status]}
                           </Badge>
                         </TableCell>
                       </TableRow>

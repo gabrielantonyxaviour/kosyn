@@ -187,7 +187,7 @@ export default function LandingCinematic() {
               textTransform: "uppercase",
             }}
           >
-            Full walkthrough · Patient · Provider · Enclave AI
+            Full walkthrough · Patient · Doctor · Enclave AI
           </span>
         </div>
       </div>

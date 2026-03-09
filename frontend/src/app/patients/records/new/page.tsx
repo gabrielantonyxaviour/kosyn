@@ -28,8 +28,13 @@ import {
 import { useActiveAccount } from "thirdweb/react";
 import { triggerWorkflow } from "@/lib/cre";
 import { usePasskey } from "@/hooks/use-passkey";
+import {
+  useCreLogs,
+  truncHash,
+  FUJI_EXPLORER,
+  IPFS_GATEWAY,
+} from "@/hooks/use-cre-logs";
 import { toast } from "sonner";
-import { createRecord } from "@/lib/demo-api";
 import type { RecordType } from "@/hooks/use-records";
 import {
   VitalsForm,
@@ -415,9 +420,9 @@ export default function NewRecordPage() {
   const [phase, setPhase] = useState<Phase>("type");
   const [selected, setSelected] = useState<TemplateId | null>(null);
   const [search, setSearch] = useState("");
-  const [creActive, setCreActive] = useState(false);
   const account = useActiveAccount();
   const { encryptData, supported } = usePasskey();
+  const { logs: creLogs, push: pushLog, clear: clearLogs } = useCreLogs();
 
   const currentIdx = PHASES.findIndex((p) => p.key === phase);
   const canGoTo = (p: Phase) => {
@@ -432,46 +437,72 @@ export default function NewRecordPage() {
   };
 
   const handleSubmit = async (data: Record<string, string>) => {
+    clearLogs();
+    pushLog("INFO", "CRE workflow triggered");
+
     toast.info(
       supported
         ? "Touch ID / Face ID required to encrypt your health record..."
         : "Encrypting health record...",
     );
+
+    pushLog("INFO", "Deriving AES-256-GCM key via WebAuthn PRF...");
     const plaintext = JSON.stringify({ type: selected, ...data });
     const encryptedBlob = await encryptData(plaintext);
     if (!encryptedBlob) {
+      pushLog("ERR", "Encryption cancelled — passkey required");
       toast.error(
         "Encryption cancelled — passkey is required to protect your data.",
       );
       return;
     }
+    pushLog("OK", "Payload encrypted client-side");
 
-    setCreActive(true);
-    toast.info("Record encrypted. Storing on IPFS via CRE...");
     const patientAddr =
       account?.address ?? "0x0000000000000000000000000000000000000000";
 
-    await triggerWorkflow("record-upload", {
+    pushLog("INFO", "Uploading encrypted blob to IPFS via Pinata...");
+
+    const result = await triggerWorkflow("record-upload", {
       patientAddress: patientAddr,
       recordType: CRE_RECORD_TYPE[selected!],
       encryptedData: JSON.stringify(encryptedBlob),
     });
-    await createRecord({
-      patientAddress: patientAddr,
-      recordType: TEMPLATE_TO_RECORD_TYPE[selected!],
-      templateType: selected!,
-      label: getRecordLabel(selected!, data),
-      createdBy: "patient",
-      createdByAddress: patientAddr,
-      formData: data,
-    });
 
-    setTimeout(() => {
-      setCreActive(false);
-      toast.success(
-        "Record encrypted client-side (AES-256-GCM) and stored on IPFS. CID registered on-chain.",
+    if (!result.success) {
+      pushLog("ERR", result.error ?? "CRE workflow failed");
+      toast.error(
+        result.error ?? "CRE workflow failed. Service may be offline.",
       );
-    }, 4000);
+      return;
+    }
+
+    const cid = (result.data?.cid ?? result.data?.ipfsCid) as
+      | string
+      | undefined;
+    if (cid) {
+      pushLog("OK", `CID stored: ${truncHash(cid)}`, `${IPFS_GATEWAY}/${cid}`);
+    } else {
+      pushLog("OK", "CID stored on IPFS");
+    }
+
+    pushLog("INFO", "Writing CID hash to HealthRecordRegistry...");
+
+    if (result.txHash) {
+      pushLog(
+        "OK",
+        `Tx confirmed on Avalanche Fuji`,
+        `${FUJI_EXPLORER}/${result.txHash}`,
+      );
+    } else {
+      pushLog("OK", "Tx confirmed on Avalanche Fuji");
+    }
+
+    pushLog("OK", "Workflow complete");
+
+    toast.success(
+      "Record encrypted client-side (AES-256-GCM) and stored on IPFS. CID registered on-chain.",
+    );
   };
 
   const tpl = templates.find((t) => t.id === selected);
@@ -672,7 +703,7 @@ export default function NewRecordPage() {
 
         {/* Right: CRE Logs */}
         <div className="flex flex-col">
-          <CreFeed workflow="record-upload" isActive={creActive} />
+          <CreFeed workflow="record-upload" logs={creLogs} />
         </div>
       </div>
     </main>

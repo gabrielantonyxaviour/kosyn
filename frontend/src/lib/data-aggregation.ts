@@ -1,5 +1,11 @@
-import type { DemoRecord } from "@/app/api/demo/store";
 import { deidentify } from "./deidentify";
+
+export interface AggregationRecord {
+  patientAddress: string;
+  recordType: string;
+  templateType: string;
+  formData?: Record<string, string>;
+}
 
 const K = 3;
 
@@ -19,7 +25,7 @@ function applyKAnonymity(
   return result;
 }
 
-export function aggregateDemographics(records: DemoRecord[]): {
+export function aggregateDemographics(records: AggregationRecord[]): {
   total_patients: number;
   record_type_distribution: Record<string, number>;
   template_type_distribution: Record<string, number>;
@@ -51,7 +57,7 @@ export function aggregateDemographics(records: DemoRecord[]): {
   };
 }
 
-export function aggregateConditions(records: DemoRecord[]): {
+export function aggregateConditions(records: AggregationRecord[]): {
   total_records: number;
   top_conditions: Array<{ condition: string; count: number; pct: number }>;
   last_updated: string;
@@ -100,7 +106,7 @@ export function aggregateConditions(records: DemoRecord[]): {
   };
 }
 
-export function aggregateOutcomes(records: DemoRecord[]): {
+export function aggregateOutcomes(records: AggregationRecord[]): {
   total_records: number;
   discharge_conditions: Record<string, number>;
   complications_rate: number;

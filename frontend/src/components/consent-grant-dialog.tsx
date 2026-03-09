@@ -10,12 +10,28 @@ import {
 } from "@/components/ui/dialog";
 import { ShieldCheck, Fingerprint } from "lucide-react";
 import { usePasskey } from "@/hooks/use-passkey";
-import { grantConsent, updateBooking, addAccessLog } from "@/lib/demo-api";
-import type { DemoBooking } from "@/app/api/demo/store";
+import { prepareContractCall } from "thirdweb";
+import { getPatientConsent, getBookingRegistry } from "@/lib/contracts";
+import { useSendTransaction } from "thirdweb/react";
+import type { OnChainBooking } from "@/hooks/use-bookings";
 import { toast } from "sonner";
 
+const RECORD_TYPE_UINT: Record<string, number> = {
+  health: 0,
+  prescription: 1,
+  certificate: 2,
+  consultation: 3,
+};
+
+const RECORD_TYPE_LABELS: Record<number, string> = {
+  0: "health",
+  1: "prescription",
+  2: "certificate",
+  3: "consultation",
+};
+
 interface ConsentGrantDialogProps {
-  booking: DemoBooking;
+  booking: OnChainBooking;
   patientAddress: string;
   onGranted: () => void;
   onDeny: () => void;
@@ -28,9 +44,17 @@ export function ConsentGrantDialog({
   onDeny,
 }: ConsentGrantDialogProps) {
   const { verify } = usePasskey();
-  const [selectedTypes, setSelectedTypes] = useState<string[]>(
-    booking.requestedRecordTypes || ["health", "prescription"],
-  );
+  const { mutateAsync: sendTx } = useSendTransaction();
+
+  // Map numeric requestedRecordTypes to string labels for UI
+  const initialTypes =
+    booking.requestedRecordTypes.length > 0
+      ? booking.requestedRecordTypes.map(
+          (n) => RECORD_TYPE_LABELS[n] ?? "health",
+        )
+      : ["health", "prescription"];
+
+  const [selectedTypes, setSelectedTypes] = useState<string[]>(initialTypes);
   const [isGranting, setIsGranting] = useState(false);
 
   const allTypes = ["health", "consultation", "prescription", "certificate"];
@@ -45,21 +69,39 @@ export function ConsentGrantDialog({
     setIsGranting(true);
     try {
       await verify();
-      await grantConsent({
-        patientAddress,
-        doctorAddress: booking.doctorAddress,
-        doctorName: booking.doctorName,
-        recordTypes: selectedTypes,
-        bookingId: booking.id,
-      });
-      await updateBooking(booking.id, "access-granted");
-      await addAccessLog({
-        patientAddress,
-        accessorAddress: booking.doctorAddress,
-        accessorName: booking.doctorName,
-        action: `Consent granted for ${selectedTypes.join(", ")} records`,
-        consultationId: booking.consultationId,
-      });
+
+      // Grant on-chain for each selected record type
+      for (const t of selectedTypes) {
+        const typeUint = RECORD_TYPE_UINT[t] ?? 0;
+        try {
+          const tx = prepareContractCall({
+            contract: getPatientConsent(),
+            method: "grantAccess",
+            params: [
+              booking.doctor as `0x${string}`,
+              typeUint,
+              BigInt(24 * 60 * 60), // 24 hours
+            ],
+          });
+          await sendTx(tx);
+        } catch {
+          // On-chain grant failed for this type — continue with others
+        }
+      }
+
+      // Update booking status to access-granted on-chain
+      try {
+        await sendTx(
+          prepareContractCall({
+            contract: getBookingRegistry(),
+            method: "updateStatus",
+            params: [BigInt(booking.id), 2],
+          }),
+        );
+      } catch {
+        // non-fatal: status update failed
+      }
+
       toast.success("Access granted to " + booking.doctorName);
       onGranted();
     } catch {

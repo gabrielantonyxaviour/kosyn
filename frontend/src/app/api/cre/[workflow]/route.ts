@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import dns from "node:dns";
 import { workflowSchema } from "@/lib/validators";
+
+// Use Google DNS to avoid ISP caching issues with trycloudflare.com
+dns.setServers(["8.8.8.8", "8.8.4.4"]);
 
 // Per-workflow trigger URLs — point to cre-bridge (local) or deployed CRE DON endpoint
 const WORKFLOW_URLS: Record<string, string | undefined> = {
@@ -45,10 +49,21 @@ export async function POST(
       body: JSON.stringify(data),
     });
     return NextResponse.json(await res.json());
-  } catch {
+  } catch (err) {
+    const message =
+      err instanceof Error ? err.message : "Internal server error";
+    const isNetwork =
+      message.includes("fetch") ||
+      message.includes("ENOTFOUND") ||
+      message.includes("resolve");
     return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
+      {
+        error: isNetwork
+          ? "CRE service unreachable — the Cloudflare tunnel may have expired. Restart cloudflared and update .env.local with the new URL."
+          : message,
+        code: isNetwork ? "CRE_UNREACHABLE" : "INTERNAL_ERROR",
+      },
+      { status: isNetwork ? 503 : 500 },
     );
   }
 }

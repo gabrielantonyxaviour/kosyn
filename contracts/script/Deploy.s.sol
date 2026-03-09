@@ -7,6 +7,7 @@ import "../src/PatientConsent.sol";
 import "../src/HealthRecordRegistry.sol";
 import "../src/KosynUSD.sol";
 import "../src/DataMarketplace.sol";
+import "../src/BookingRegistry.sol";
 import "../src/PatientRegistry.sol";
 import "../src/HIPAAComplianceRegistry.sol";
 import "../src/ace/KosynExtractor.sol";
@@ -89,6 +90,10 @@ contract Deploy is Script {
 
         DataMarketplace marketplace = new DataMarketplace(forwarder, address(kusd));
         console.log("DataMarketplace:", address(marketplace));
+
+        // --- Bookings ---
+        BookingRegistry bookingRegistry = new BookingRegistry(address(kusd));
+        console.log("BookingRegistry:", address(bookingRegistry));
 
         vm.stopBroadcast();
     }

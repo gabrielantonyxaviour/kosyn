@@ -1,21 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import {
-  useActiveAccount,
-  useReadContract,
-  useSendTransaction,
-} from "thirdweb/react";
+import { useActiveAccount, useReadContract } from "thirdweb/react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CreditCard, Coins } from "lucide-react";
-import { getKosynUSD, prepareContractCall } from "@/lib/contracts";
+import { CreditCard, Coins, Loader2 } from "lucide-react";
+import { getKosynUSD } from "@/lib/contracts";
 
 interface PaymentFormProps {
   amount: number;
   doctorName: string;
   doctorAddress: string;
-  onPaymentComplete: (method: "kusd" | "stripe") => void;
+  onPaymentComplete: (
+    method: "kusd" | "stripe",
+    txHash?: string,
+  ) => Promise<void> | void;
 }
 
 export function PaymentForm({
@@ -40,8 +39,6 @@ export function PaymentForm({
   const kusdBalance = balanceRaw ? Number(balanceRaw) / 1e6 : 0;
   const insufficientBalance = kusdBalance < amount;
 
-  const { mutate: sendTx } = useSendTransaction();
-
   const handlePay = async () => {
     setError(null);
     setIsProcessing(true);
@@ -51,10 +48,24 @@ export function PaymentForm({
         const res = await fetch("/api/stripe/checkout", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ amount, doctorName, doctorAddress }),
+          body: JSON.stringify({
+            amount,
+            doctorName,
+            doctorAddress,
+            walletAddress: account?.address,
+          }),
         });
         const data = await res.json();
         if (data.url) {
+          // Save booking context so the consultations page can resume after Stripe redirect
+          sessionStorage.setItem(
+            "kosyn-booking-context",
+            JSON.stringify({
+              doctorName,
+              doctorAddress,
+              amount,
+            }),
+          );
           window.location.href = data.url;
           return;
         }
@@ -66,25 +77,14 @@ export function PaymentForm({
       return;
     }
 
-    // KUSD path: real on-chain transfer
-    // amount is in whole KUSD units — multiply by 1e6 for 6-decimal token
-    const kusdAmount = BigInt(Math.round(amount * 1_000_000));
-    const tx = prepareContractCall({
-      contract: getKosynUSD(),
-      method: "transfer",
-      params: [doctorAddress as `0x${string}`, kusdAmount],
-    });
-
-    sendTx(tx, {
-      onSuccess: () => {
-        setIsProcessing(false);
-        onPaymentComplete("kusd");
-      },
-      onError: (err) => {
-        setIsProcessing(false);
-        setError(err.message ?? "Transaction failed");
-      },
-    });
+    // KUSD path: keep spinner while parent does approve + createBooking
+    try {
+      await onPaymentComplete("kusd");
+    } catch {
+      setError("Booking transaction failed");
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
@@ -146,9 +146,14 @@ export function PaymentForm({
           isProcessing || !account || (method === "kusd" && insufficientBalance)
         }
       >
-        {isProcessing
-          ? "Processing..."
-          : `Pay ${amount} ${method === "kusd" ? "KUSD" : "USD"}`}
+        {isProcessing ? (
+          <>
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            {method === "kusd" ? "Confirming on-chain..." : "Processing..."}
+          </>
+        ) : (
+          `Pay ${amount} ${method === "kusd" ? "KUSD" : "USD"}`
+        )}
       </Button>
     </div>
   );

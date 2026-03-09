@@ -20,12 +20,13 @@ import Link from "next/link";
 
 export default function ProfilePage() {
   const account = useActiveAccount();
-  const { decryptData, isLoading: decrypting } = usePasskey();
+  const { decryptData } = usePasskey();
 
   const [cache, setCache] = useState<PatientProfileCache | null>(null);
   const [profile, setProfile] = useState<Record<string, string> | null>(null);
   const [decryptError, setDecryptError] = useState<string | null>(null);
   const [decryptAttempted, setDecryptAttempted] = useState(false);
+  const [isDecrypting, setIsDecrypting] = useState(false);
 
   useEffect(() => {
     if (!account) return;
@@ -33,9 +34,10 @@ export default function ProfilePage() {
   }, [account]);
 
   const handleDecrypt = async () => {
-    if (!cache?.profileCid) return;
+    if (!cache?.profileCid || isDecrypting) return;
     setDecryptError(null);
     setDecryptAttempted(true);
+    setIsDecrypting(true);
     try {
       const gateways = [
         `https://gateway.pinata.cloud/ipfs/${cache.profileCid}`,
@@ -60,6 +62,8 @@ export default function ProfilePage() {
       setProfile(JSON.parse(decrypted));
     } catch (err) {
       setDecryptError(err instanceof Error ? err.message : "Decryption failed");
+    } finally {
+      setIsDecrypting(false);
     }
   };
 
@@ -183,10 +187,10 @@ export default function ProfilePage() {
             </p>
             <Button
               onClick={handleDecrypt}
-              disabled={decrypting || !cache}
+              disabled={isDecrypting || !cache}
               size="sm"
             >
-              {decrypting ? (
+              {isDecrypting ? (
                 <>
                   <Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" />
                   Decrypting…

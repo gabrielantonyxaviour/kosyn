@@ -11,26 +11,26 @@ import {
 } from "@/components/ui/table";
 import { ShieldCheck } from "lucide-react";
 import { format } from "date-fns";
-import { useRouter } from "next/navigation";
-import { useDemoPoll } from "@/hooks/use-demo-poll";
-import { getAccessLogs } from "@/lib/demo-api";
-import type { DemoAccessLog } from "@/app/api/demo/store";
+import { useAccessLogs } from "@/hooks/use-access-logs";
+import { useReadContract } from "thirdweb/react";
+import { getHIPAAComplianceRegistry } from "@/lib/contracts";
 
 interface AccessLogProps {
   patientAddress?: string;
 }
 
 export function AccessLog({ patientAddress }: AccessLogProps) {
-  const router = useRouter();
-  const { data: liveLogs } = useDemoPoll(
-    () =>
-      patientAddress
-        ? getAccessLogs(patientAddress)
-        : Promise.resolve([] as DemoAccessLog[]),
-    5000,
-  );
+  const { logs } = useAccessLogs(patientAddress);
 
-  const logs = liveLogs || [];
+  // On-chain attestation count for compliance badge
+  const { data: attestationIds } = useReadContract({
+    contract: getHIPAAComplianceRegistry(),
+    method: "getPatientAttestations",
+    params: [patientAddress || "0x0000000000000000000000000000000000000000"],
+    queryOptions: { enabled: !!patientAddress },
+  });
+
+  const hasAttestations = (attestationIds?.length ?? 0) > 0;
 
   if (logs.length === 0) {
     return (
@@ -62,22 +62,17 @@ export function AccessLog({ patientAddress }: AccessLogProps) {
           <TableBody>
             {logs.map((log) => (
               <TableRow
-                key={log.id}
-                className="cursor-pointer hover:bg-muted/50"
-                onClick={() => {
-                  if (log.consultationId) {
-                    router.push(`/patients/consultation/${log.consultationId}`);
-                  }
-                }}
+                key={`${log.recordId}-${log.timestamp}`}
+                className="hover:bg-muted/50"
               >
                 <TableCell className="font-medium text-xs">
-                  {log.accessorName}
+                  {log.providerName}
                 </TableCell>
                 <TableCell className="text-muted-foreground text-xs">
-                  {format(new Date(log.timestamp), "MMM d, h:mm a")}
+                  {format(new Date(log.timestamp * 1000), "MMM d, h:mm a")}
                 </TableCell>
                 <TableCell className="text-right">
-                  {log.hasAttestation && (
+                  {(log.granted || hasAttestations) && (
                     <Badge
                       variant="outline"
                       className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 gap-1 text-[10px]"

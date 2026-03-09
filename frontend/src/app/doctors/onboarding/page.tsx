@@ -9,18 +9,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { client, providerWallet, chain } from "@/lib/thirdweb";
 import { ProviderRegister } from "@/components/provider-register";
+import { useProviderIsRegistered } from "@/hooks/use-provider-profile";
 import Image from "next/image";
-
-const PROVIDER_KEY = (address: string) =>
-  `kosyn-provider:${address.toLowerCase()}`;
-
-function isProviderRegistered(address: string): boolean {
-  try {
-    return !!localStorage.getItem(PROVIDER_KEY(address));
-  } catch {
-    return false;
-  }
-}
 
 function BareVideo() {
   return (
@@ -237,6 +227,8 @@ export default function DoctorOnboardingPage() {
   const status = useActiveWalletConnectionStatus();
   const router = useRouter();
   const [showForm, setShowForm] = useState(false);
+  const { data: isOnChainRegistered, isLoading: registryLoading } =
+    useProviderIsRegistered(account?.address);
 
   useEffect(() => {
     if (status !== "connected" || !account) {
@@ -244,12 +236,14 @@ export default function DoctorOnboardingPage() {
       return;
     }
 
-    if (isProviderRegistered(account.address)) {
+    if (registryLoading) return;
+
+    if (isOnChainRegistered) {
       router.replace("/doctors/dashboard");
     } else {
       setShowForm(true);
     }
-  }, [status, account?.address, router]);
+  }, [status, account?.address, router, isOnChainRegistered, registryLoading]);
 
   // Auth state loading — show bare video only
   if (status === "unknown" || status === "connecting") {

@@ -55,9 +55,9 @@ export function CalendarPicker({
         />
       </div>
 
-      {date && (
-        <div className="rounded-lg border border-border p-4 space-y-3">
-          <p className="text-sm font-medium">Available Times</p>
+      <div className="rounded-lg border border-border p-4 space-y-3">
+        <p className="text-sm font-medium">Available Times</p>
+        {date ? (
           <div className="grid grid-cols-2 gap-2">
             {timeSlots.map((slot) => (
               <Button
@@ -70,8 +70,12 @@ export function CalendarPicker({
               </Button>
             ))}
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="flex items-center justify-center h-48 text-sm text-muted-foreground">
+            Select a date to see available slots
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useActiveAccount, useReadContract } from "thirdweb/react";
 import { getKosynUSD } from "@/lib/contracts";
@@ -12,9 +12,13 @@ import {
   Check,
   ExternalLink,
   AlertCircle,
+  Loader2,
+  CheckCircle2,
 } from "lucide-react";
 
 const PRESETS = [10, 25, 50, 100];
+
+type MintStatus = "idle" | "processing" | "minted" | "failed";
 
 function DepositContent() {
   const account = useActiveAccount();
@@ -29,20 +33,47 @@ function DepositContent() {
   const [creOnline, setCreOnline] = useState<boolean | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [creActive, setCreActive] = useState(false);
+  const [mintStatus, setMintStatus] = useState<MintStatus>("idle");
 
-  // Activate CRE feed when returning from successful Stripe payment
-  useEffect(() => {
-    if (payment === "success") {
-      setCreActive(true);
-    }
-  }, [payment]);
+  // Capture balance at page load to detect increase after minting
+  const initialBalanceRef = useRef<bigint | null>(null);
 
   const { data: balance } = useReadContract({
     contract: getKosynUSD(),
     method: "balanceOf",
     params: [account?.address ?? "0x0000000000000000000000000000000000000000"],
-    queryOptions: { enabled: !!account },
+    queryOptions: {
+      enabled: !!account,
+      refetchInterval: mintStatus === "processing" ? 3000 : undefined,
+    },
   });
+
+  // Capture initial balance on first load
+  useEffect(() => {
+    if (balance !== undefined && initialBalanceRef.current === null) {
+      initialBalanceRef.current = balance;
+    }
+  }, [balance]);
+
+  // Detect balance increase → minting confirmed
+  useEffect(() => {
+    if (
+      mintStatus === "processing" &&
+      balance !== undefined &&
+      initialBalanceRef.current !== null &&
+      balance > initialBalanceRef.current
+    ) {
+      setMintStatus("minted");
+    }
+  }, [balance, mintStatus]);
+
+  // When returning from Stripe success, start processing
+  useEffect(() => {
+    if (payment === "success" && mintStatus === "idle") {
+      setMintStatus("processing");
+      setCreActive(true);
+    }
+  }, [payment, mintStatus]);
 
   useEffect(() => {
     async function checkBridge() {
@@ -98,14 +129,10 @@ function DepositContent() {
     setTimeout(() => setCopied(false), 2000);
   }
 
+  const isPostPayment = payment === "success";
+
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
-      {payment === "success" && (
-        <div className="mb-6 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-400">
-          Payment successful! {amountParam} KUSD will be minted to your wallet
-          shortly.
-        </div>
-      )}
       {payment === "cancelled" && (
         <div className="mb-6 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
           Payment cancelled. No charges were made.
@@ -121,113 +148,230 @@ function DepositContent() {
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 items-stretch">
-        {/* Buy with Card */}
-        <div className="lg:col-span-2 rounded-xl border border-border bg-card p-6">
-          <div className="mb-5 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <CreditCard className="h-5 w-5 text-muted-foreground" />
-              <h2 className="font-semibold">Buy with Card</h2>
+        {/* Left: Buy form or minting status */}
+        <div className="lg:col-span-2">
+          {isPostPayment ? (
+            <div className="rounded-xl border border-border bg-card p-6 space-y-6">
+              {mintStatus === "minted" ? (
+                <>
+                  <div className="flex flex-col items-center gap-4 py-6">
+                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/10">
+                      <CheckCircle2 className="h-8 w-8 text-emerald-400" />
+                    </div>
+                    <div className="text-center space-y-1">
+                      <p className="text-lg font-semibold text-emerald-400">
+                        {amountParam} KUSD Minted
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Tokens have been minted to your wallet via CRE.
+                      </p>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      New balance:{" "}
+                      <span className="font-medium text-emerald-400">
+                        {formatted} KUSD
+                      </span>
+                    </p>
+                  </div>
+                  <a
+                    href="/patients/deposit"
+                    className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+                  >
+                    Make Another Deposit
+                  </a>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center gap-3">
+                    <CreditCard className="h-5 w-5 text-muted-foreground" />
+                    <h2 className="font-semibold">Minting KUSD</h2>
+                  </div>
+
+                  <div className="space-y-4">
+                    {/* Step 1: Stripe payment */}
+                    <div className="flex items-center gap-3 rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-4">
+                      <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-400" />
+                      <div>
+                        <p className="text-sm font-medium">
+                          Stripe payment confirmed
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          ${amountParam} USD charged successfully
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Step 2: Webhook → CRE */}
+                    <div
+                      className={`flex items-center gap-3 rounded-lg border p-4 ${
+                        mintStatus === "processing"
+                          ? "border-blue-500/20 bg-blue-500/5"
+                          : "border-emerald-500/20 bg-emerald-500/5"
+                      }`}
+                    >
+                      {mintStatus === "processing" ? (
+                        <Loader2 className="h-5 w-5 shrink-0 text-blue-400 animate-spin" />
+                      ) : (
+                        <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-400" />
+                      )}
+                      <div>
+                        <p className="text-sm font-medium">
+                          CRE payment-mint workflow
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {mintStatus === "processing"
+                            ? "Verifying payment and minting KUSD on-chain..."
+                            : "KUSD minted successfully"}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Step 3: On-chain confirmation */}
+                    <div
+                      className={`flex items-center gap-3 rounded-lg border p-4 ${
+                        mintStatus === "processing"
+                          ? "border-border bg-muted/10"
+                          : "border-emerald-500/20 bg-emerald-500/5"
+                      }`}
+                    >
+                      {mintStatus === "processing" ? (
+                        <div className="h-5 w-5 shrink-0 rounded-full border-2 border-muted-foreground/30" />
+                      ) : (
+                        <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-400" />
+                      )}
+                      <div>
+                        <p
+                          className={`text-sm font-medium ${mintStatus === "processing" ? "text-muted-foreground" : ""}`}
+                        >
+                          On-chain confirmation
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {mintStatus === "processing"
+                            ? `Waiting for ${amountParam} KUSD to appear in your wallet...`
+                            : `${amountParam} KUSD received`}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {mintStatus === "processing" && (
+                    <p className="text-xs text-muted-foreground text-center">
+                      Polling your KUSD balance every 3 seconds. This page will
+                      update automatically when minting completes.
+                    </p>
+                  )}
+                </>
+              )}
             </div>
-            {creOnline !== null && (
-              <div className="flex items-center gap-1.5">
-                <div
-                  className={`h-2 w-2 rounded-full ${creOnline ? "bg-emerald-400" : "bg-red-400"}`}
-                />
-                <span className="text-xs text-muted-foreground">
-                  {creOnline ? "CRE online" : "CRE offline"}
-                </span>
+          ) : (
+            <div className="rounded-xl border border-border bg-card p-6">
+              <div className="mb-5 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <CreditCard className="h-5 w-5 text-muted-foreground" />
+                  <h2 className="font-semibold">Buy with Card</h2>
+                </div>
+                {creOnline !== null && (
+                  <div className="flex items-center gap-1.5">
+                    <div
+                      className={`h-2 w-2 rounded-full ${creOnline ? "bg-emerald-400" : "bg-red-400"}`}
+                    />
+                    <span className="text-xs text-muted-foreground">
+                      {creOnline ? "CRE online" : "CRE offline"}
+                    </span>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-          <p className="mb-5 text-sm text-muted-foreground">
-            Pay with a debit or credit card. KUSD tokens are minted to your
-            wallet instantly after payment. 1 KUSD = $1 USD.
-          </p>
-
-          {creOnline === false && (
-            <div className="mb-4 flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2.5">
-              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
-              <p className="text-xs text-amber-300">
-                The CRE service is currently offline. Card deposits require CRE
-                to process payments. Please reach out to{" "}
-                <a
-                  href="mailto:gabrielantony56@gmail.com"
-                  className="underline hover:text-amber-200"
-                >
-                  gabrielantony56@gmail.com
-                </a>{" "}
-                to have it turned back on.
+              <p className="mb-5 text-sm text-muted-foreground">
+                Pay with a debit or credit card. KUSD tokens are minted to your
+                wallet instantly after payment. 1 KUSD = $1 USD.
               </p>
-            </div>
-          )}
 
-          {checkoutError && (
-            <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2.5 text-xs text-red-400">
-              {checkoutError}
-            </div>
-          )}
+              {creOnline === false && (
+                <div className="mb-4 flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2.5">
+                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
+                  <p className="text-xs text-amber-300">
+                    The CRE service is currently offline. Card deposits require
+                    CRE to process payments. Please reach out to{" "}
+                    <a
+                      href="mailto:gabrielantony56@gmail.com"
+                      className="underline hover:text-amber-200"
+                    >
+                      gabrielantony56@gmail.com
+                    </a>{" "}
+                    to have it turned back on.
+                  </p>
+                </div>
+              )}
 
-          <div className="mb-4 grid grid-cols-4 gap-2">
-            {PRESETS.map((p) => (
-              <button
-                key={p}
-                onClick={() => {
-                  setSelectedPreset(p);
-                  setCustomAmount("");
+              {checkoutError && (
+                <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2.5 text-xs text-red-400">
+                  {checkoutError}
+                </div>
+              )}
+
+              <div className="mb-4 grid grid-cols-4 gap-2">
+                {PRESETS.map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => {
+                      setSelectedPreset(p);
+                      setCustomAmount("");
+                    }}
+                    className={`rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                      selectedPreset === p && !customAmount
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border hover:border-primary/50 hover:bg-muted/50"
+                    }`}
+                  >
+                    ${p}
+                  </button>
+                ))}
+              </div>
+
+              <input
+                type="text"
+                inputMode="decimal"
+                placeholder="Custom amount (USD)"
+                value={customAmount}
+                onChange={(e) => {
+                  const v = e.target.value.replace(/[^0-9.]/g, "");
+                  setCustomAmount(v);
                 }}
-                className={`rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
-                  selectedPreset === p && !customAmount
-                    ? "border-primary bg-primary/10 text-primary"
-                    : "border-border hover:border-primary/50 hover:bg-muted/50"
-                }`}
+                className="mb-2 w-full rounded-lg border border-border bg-muted/50 px-3 py-2 text-sm outline-none focus:border-primary"
+              />
+
+              {effectiveAmount > 0 && (
+                <p className="mb-5 text-xs text-muted-foreground">
+                  You&apos;ll receive{" "}
+                  <span className="font-medium text-foreground">
+                    {effectiveAmount} KUSD
+                  </span>
+                </p>
+              )}
+
+              <button
+                onClick={handleStripeCheckout}
+                disabled={!canPay}
+                className="mt-auto flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                ${p}
+                {loading ? (
+                  "Redirecting…"
+                ) : creOnline === false ? (
+                  "CRE offline — deposits unavailable"
+                ) : (
+                  <>
+                    Pay ${effectiveAmount || "—"} with Stripe
+                    <ExternalLink className="h-3.5 w-3.5" />
+                  </>
+                )}
               </button>
-            ))}
-          </div>
-
-          <input
-            type="text"
-            inputMode="decimal"
-            placeholder="Custom amount (USD)"
-            value={customAmount}
-            onChange={(e) => {
-              const v = e.target.value.replace(/[^0-9.]/g, "");
-              setCustomAmount(v);
-            }}
-            className="mb-2 w-full rounded-lg border border-border bg-muted/50 px-3 py-2 text-sm outline-none focus:border-primary"
-          />
-
-          {effectiveAmount > 0 && (
-            <p className="mb-5 text-xs text-muted-foreground">
-              You&apos;ll receive{" "}
-              <span className="font-medium text-foreground">
-                {effectiveAmount} KUSD
-              </span>
-            </p>
+            </div>
           )}
-
-          <button
-            onClick={handleStripeCheckout}
-            disabled={!canPay}
-            className="mt-auto flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {loading ? (
-              "Redirecting…"
-            ) : creOnline === false ? (
-              "CRE offline — deposits unavailable"
-            ) : (
-              <>
-                Pay ${effectiveAmount || "—"} with Stripe
-                <ExternalLink className="h-3.5 w-3.5" />
-              </>
-            )}
-          </button>
         </div>
 
         {/* Right column: CRE Logs (after payment) or Deposit KUSD */}
         <div className="flex flex-col min-h-[400px]">
-          {payment === "success" ? (
+          {isPostPayment ? (
             <CreFeed workflow="payment-mint" isActive={creActive} />
           ) : (
             <div className="rounded-xl border border-border bg-card p-6 flex-1">

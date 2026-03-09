@@ -1,0 +1,5 @@
+{
+  "patientAddress": "0x000000000000000000000000000000000000bEEF",
+  "recordType": 1,
+  "encryptedData": "{\"ciphertext\":\"demo\",\"iv\":\"demo\",\"tag\":\"demo\"}"
+}

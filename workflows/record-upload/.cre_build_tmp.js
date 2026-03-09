@@ -15837,6 +15837,74 @@ function bytesToBase64(bytes) {
   }
   return result;
 }
+var PROVIDER_FIELDS = new Set([
+  "surgeon",
+  "assistantSurgeon",
+  "anesthesiologist",
+  "cardiologist",
+  "referringPhysician",
+  "attendingPhysician",
+  "clinician",
+  "administeredBy",
+  "reviewedBy",
+  "orderingPhysician",
+  "pathologist",
+  "therapist",
+  "dietitian",
+  "dentist",
+  "examiner",
+  "triageNurse",
+  "radiologist",
+  "specificProvider",
+  "referringProvider",
+  "orderingProvider",
+  "prescribedBy",
+  "documentedBy",
+  "lab",
+  "facility",
+  "referringFacility"
+]);
+var DATE_FIELDS = new Set([
+  "date",
+  "dateOfSurgery",
+  "admissionDate",
+  "dischargeDate",
+  "sessionDate",
+  "dateAdministered",
+  "collectionDate",
+  "specimenDate",
+  "reportDate",
+  "assessmentDate",
+  "visitDate",
+  "arrivalDate",
+  "referralDate",
+  "startDate",
+  "nextDue",
+  "nextAppointment",
+  "followUpDate",
+  "reconciliationDate",
+  "onsetDate",
+  "lastOccurrence",
+  "dateRecorded",
+  "examDate",
+  "testDate"
+]);
+var FREE_TEXT_FIELDS = new Set([
+  "notes",
+  "clinicalNotes",
+  "operativeFindings",
+  "postOpPlan",
+  "treatmentPlanUpdate",
+  "dischargeInstructions",
+  "returnToErInstructions",
+  "followUpInstructions",
+  "restrictions",
+  "familyImplications",
+  "questionsForSpecialist",
+  "clinicalHistory",
+  "hpi",
+  "clinicalInterpretation"
+]);
 var onHttpTrigger = (runtime2, payload) => {
   const body = decodeJson(payload.input);
   if (!body.patientAddress || !body.encryptedData) {

@@ -18,7 +18,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CalendarIcon, Plus, Trash2, Upload } from "lucide-react";
+import { CalendarIcon, Clock, Plus, Trash2, Upload } from "lucide-react";
+import {
+  pickRandom,
+  vitalsPresets,
+  medHistoryPresets,
+  medicationsPresets,
+  labResultsPresets,
+  vaccinationPresets,
+  cardiologyPresets,
+  allergyPresets,
+  surgicalPresets,
+  dischargePresets,
+  mentalHealthPresets,
+  genericPresets,
+} from "./presets";
 
 export type SubmitFn = (d: Record<string, string>) => void;
 
@@ -74,6 +88,76 @@ export function DateField({
   );
 }
 
+const HOURS = Array.from({ length: 24 }, (_, i) =>
+  i.toString().padStart(2, "0"),
+);
+const MINUTES = Array.from({ length: 12 }, (_, i) =>
+  (i * 5).toString().padStart(2, "0"),
+);
+
+export function TimeField({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [h, m] = value ? value.split(":") : ["", ""];
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className="flex h-9 w-full items-center gap-2 rounded-md border border-input bg-transparent px-3 py-1 text-sm hover:bg-accent"
+        >
+          <Clock className="h-4 w-4 text-muted-foreground" />
+          {value || <span className="text-muted-foreground">Pick a time</span>}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-3" align="start">
+        <div className="flex items-center gap-2">
+          <Select
+            value={h}
+            onValueChange={(v) => {
+              onChange(`${v}:${m || "00"}`);
+            }}
+          >
+            <SelectTrigger className="w-[70px] h-9 text-sm">
+              <SelectValue placeholder="HH" />
+            </SelectTrigger>
+            <SelectContent className="max-h-48">
+              {HOURS.map((hr) => (
+                <SelectItem key={hr} value={hr}>
+                  {hr}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <span className="text-muted-foreground font-medium">:</span>
+          <Select
+            value={m}
+            onValueChange={(v) => {
+              onChange(`${h || "00"}:${v}`);
+            }}
+          >
+            <SelectTrigger className="w-[70px] h-9 text-sm">
+              <SelectValue placeholder="MM" />
+            </SelectTrigger>
+            <SelectContent className="max-h-48">
+              {MINUTES.map((mn) => (
+                <SelectItem key={mn} value={mn}>
+                  {mn}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 export function Sel({
   value,
   onValueChange,
@@ -97,23 +181,7 @@ export function Sel({
 
 // ─── 1. Vitals ────────────────────────────────────────────────────────────────
 export function VitalsForm({ onSubmit }: { onSubmit: SubmitFn }) {
-  const [f, setF] = useState({
-    date: "",
-    time: "",
-    bpSystolic: "",
-    bpDiastolic: "",
-    bpArm: "",
-    position: "",
-    heartRate: "",
-    respiratoryRate: "",
-    height: "",
-    weight: "",
-    temperature: "",
-    tempMethod: "",
-    spo2: "",
-    painScore: "",
-    notes: "",
-  });
+  const [f, setF] = useState(pickRandom(vitalsPresets));
   const u = (k: string, v: string) => setF((p) => ({ ...p, [k]: v }));
 
   const bmi = useMemo(() => {
@@ -133,12 +201,7 @@ export function VitalsForm({ onSubmit }: { onSubmit: SubmitFn }) {
           <DateField value={f.date} onChange={(v) => u("date", v)} />
         </F>
         <F label="Time of Measurement">
-          <Input
-            type="time"
-            value={f.time}
-            onChange={(e) => u("time", e.target.value)}
-            className="h-9"
-          />
+          <TimeField value={f.time} onChange={(v) => u("time", v)} />
         </F>
       </div>
 
@@ -327,9 +390,12 @@ const newMed = (): MedRow => ({
 });
 
 export function MedicationsForm({ onSubmit }: { onSubmit: SubmitFn }) {
-  const [meds, setMeds] = useState<MedRow[]>([newMed()]);
-  const [reviewedBy, setReviewedBy] = useState("");
-  const [reconciliationDate, setReconciliationDate] = useState("");
+  const preset = pickRandom(medicationsPresets);
+  const [meds, setMeds] = useState<MedRow[]>(JSON.parse(preset.medications));
+  const [reviewedBy, setReviewedBy] = useState(preset.reviewedBy);
+  const [reconciliationDate, setReconciliationDate] = useState(
+    preset.reconciliationDate,
+  );
 
   const addMed = () => setMeds((m) => [...m, newMed()]);
   const removeMed = (id: string) =>
@@ -543,14 +609,15 @@ const newTest = (): TestRow => ({
 });
 
 export function LabResultsForm({ onSubmit }: { onSubmit: SubmitFn }) {
-  const [tests, setTests] = useState<TestRow[]>([newTest()]);
+  const labPreset = pickRandom(labResultsPresets);
+  const [tests, setTests] = useState<TestRow[]>(JSON.parse(labPreset.tests));
   const [meta, setMeta] = useState({
-    orderingPhysician: "",
-    lab: "",
-    collectionDate: "",
-    collectionTime: "",
-    fastingStatus: "",
-    specimenType: "",
+    orderingPhysician: labPreset.orderingPhysician,
+    lab: labPreset.lab,
+    collectionDate: labPreset.collectionDate,
+    collectionTime: labPreset.collectionTime,
+    fastingStatus: labPreset.fastingStatus,
+    specimenType: labPreset.specimenType,
   });
   const um = (k: string, v: string) => setMeta((p) => ({ ...p, [k]: v }));
 
@@ -600,11 +667,9 @@ export function LabResultsForm({ onSubmit }: { onSubmit: SubmitFn }) {
             />
           </F>
           <F label="Collection Time">
-            <Input
-              type="time"
+            <TimeField
               value={meta.collectionTime}
-              onChange={(e) => um("collectionTime", e.target.value)}
-              className="h-9"
+              onChange={(v) => um("collectionTime", v)}
             />
           </F>
           <F label="Fasting Status">
@@ -762,20 +827,7 @@ export function LabResultsForm({ onSubmit }: { onSubmit: SubmitFn }) {
 
 // ─── 4. Allergy Profile ───────────────────────────────────────────────────────
 export function AllergyProfileForm({ onSubmit }: { onSubmit: SubmitFn }) {
-  const [f, setF] = useState({
-    allergen: "",
-    category: "",
-    reactionType: "",
-    severity: "",
-    verificationStatus: "",
-    status: "active",
-    onsetDate: "",
-    lastOccurrence: "",
-    dateRecorded: "",
-    emergencyTreatment: "",
-    documentedBy: "",
-    notes: "",
-  });
+  const [f, setF] = useState(pickRandom(allergyPresets));
   const u = (k: string, v: string) => setF((p) => ({ ...p, [k]: v }));
   return (
     <div className="space-y-4">
@@ -900,20 +952,7 @@ export function AllergyProfileForm({ onSubmit }: { onSubmit: SubmitFn }) {
 
 // ─── 5. Vaccination ───────────────────────────────────────────────────────────
 export function VaccinationForm({ onSubmit }: { onSubmit: SubmitFn }) {
-  const [f, setF] = useState({
-    vaccine: "",
-    cvxCode: "",
-    dateAdministered: "",
-    doseInSeries: "",
-    totalDoses: "",
-    lotNumber: "",
-    manufacturer: "",
-    route: "",
-    site: "",
-    administeredBy: "",
-    visGiven: "",
-    nextDue: "",
-  });
+  const [f, setF] = useState(pickRandom(vaccinationPresets));
   const u = (k: string, v: string) => setF((p) => ({ ...p, [k]: v }));
   return (
     <div className="space-y-4">
@@ -1032,26 +1071,7 @@ export function VaccinationForm({ onSubmit }: { onSubmit: SubmitFn }) {
 
 // ─── 6. Cardiology ───────────────────────────────────────────────────────────
 export function CardiologyForm({ onSubmit }: { onSubmit: SubmitFn }) {
-  const [f, setF] = useState({
-    testType: "",
-    date: "",
-    cardiologist: "",
-    referringPhysician: "",
-    indication: "",
-    // ECG
-    ecgRate: "",
-    ecgRhythm: "",
-    prInterval: "",
-    qrsDuration: "",
-    qtcInterval: "",
-    ecgAxis: "",
-    // Echo
-    lvef: "",
-    wallMotion: "",
-    valveAssessment: "",
-    findings: "",
-    interpretation: "",
-  });
+  const [f, setF] = useState(pickRandom(cardiologyPresets));
   const u = (k: string, v: string) => setF((p) => ({ ...p, [k]: v }));
   const isEcg = f.testType === "ecg";
   const isEcho = f.testType === "echo";
@@ -1237,22 +1257,7 @@ export function CardiologyForm({ onSubmit }: { onSubmit: SubmitFn }) {
 
 // ─── 7. Surgical Report ───────────────────────────────────────────────────────
 export function SurgicalReportForm({ onSubmit }: { onSubmit: SubmitFn }) {
-  const [f, setF] = useState({
-    procedureName: "",
-    cptCode: "",
-    dateOfSurgery: "",
-    surgeon: "",
-    assistantSurgeon: "",
-    anesthesiologist: "",
-    anesthesiaType: "",
-    estimatedBloodLoss: "",
-    duration: "",
-    complications: "",
-    pathologySpecimen: "",
-    disposition: "",
-    operativeFindings: "",
-    postOpPlan: "",
-  });
+  const [f, setF] = useState(pickRandom(surgicalPresets));
   const u = (k: string, v: string) => setF((p) => ({ ...p, [k]: v }));
   return (
     <div className="space-y-4">
@@ -1391,21 +1396,7 @@ export function SurgicalReportForm({ onSubmit }: { onSubmit: SubmitFn }) {
 
 // ─── 8. Discharge Summary ─────────────────────────────────────────────────────
 export function DischargeSummaryForm({ onSubmit }: { onSubmit: SubmitFn }) {
-  const [f, setF] = useState({
-    admissionDate: "",
-    dischargeDate: "",
-    admissionType: "",
-    principalDiagnosis: "",
-    icd10Code: "",
-    secondaryDiagnoses: "",
-    attendingPhysician: "",
-    dischargeCondition: "",
-    dischargeDisposition: "",
-    medicationsOnDischarge: "",
-    followUpInstructions: "",
-    restrictions: "",
-    returnToErInstructions: "",
-  });
+  const [f, setF] = useState(pickRandom(dischargePresets));
   const u = (k: string, v: string) => setF((p) => ({ ...p, [k]: v }));
   return (
     <div className="space-y-4">
@@ -1535,20 +1526,7 @@ export function DischargeSummaryForm({ onSubmit }: { onSubmit: SubmitFn }) {
 
 // ─── 9. Mental Health ─────────────────────────────────────────────────────────
 export function MentalHealthForm({ onSubmit }: { onSubmit: SubmitFn }) {
-  const [f, setF] = useState({
-    sessionType: "",
-    sessionDate: "",
-    clinician: "",
-    dsm5Diagnosis: "",
-    dsm5Code: "",
-    phq9Score: "",
-    gad7Score: "",
-    cssrs: "",
-    safetyPlan: "",
-    treatmentModality: "",
-    clinicalNotes: "",
-    treatmentPlanUpdate: "",
-  });
+  const [f, setF] = useState(pickRandom(mentalHealthPresets));
   const u = (k: string, v: string) => setF((p) => ({ ...p, [k]: v }));
   return (
     <div className="space-y-4">
@@ -1728,15 +1706,7 @@ export function MentalHealthForm({ onSubmit }: { onSubmit: SubmitFn }) {
 
 // ─── 10. Medical History ──────────────────────────────────────────────────────
 export function MedHistoryForm({ onSubmit }: { onSubmit: SubmitFn }) {
-  const [f, setF] = useState({
-    conditions: "",
-    surgeries: "",
-    familyHistory: "",
-    allergies: "",
-    socialHistory: "",
-    reproductiveHistory: "",
-    notes: "",
-  });
+  const [f, setF] = useState(pickRandom(medHistoryPresets));
   const u = (k: string, v: string) => setF((p) => ({ ...p, [k]: v }));
   return (
     <div className="space-y-4">
@@ -1818,12 +1788,7 @@ export function GenericMedicalForm({
   templateId: string;
   onSubmit: SubmitFn;
 }) {
-  const [f, setF] = useState({
-    date: "",
-    provider: "",
-    content: "",
-    notes: "",
-  });
+  const [f, setF] = useState(pickRandom(genericPresets));
   const u = (k: string, v: string) => setF((p) => ({ ...p, [k]: v }));
   const contentLabel = genericContentLabel[templateId] ?? "Clinical Notes";
   return (

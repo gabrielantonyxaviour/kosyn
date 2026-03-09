@@ -5,35 +5,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { SelectItem } from "@/components/ui/select";
-import { F, DateField, Sel, type SubmitFn } from "./forms";
+import { F, DateField, TimeField, Sel, type SubmitFn } from "./forms";
+import { pickRandom, emergencyPresets, referralPresets } from "./presets";
 
 // ─── EmergencyRecordForm ───────────────────────────────────────────────────────
 export function EmergencyRecordForm({ onSubmit }: { onSubmit: SubmitFn }) {
-  const [f, setF] = useState<Record<string, string>>({
-    arrivalDate: "",
-    arrivalTime: "",
-    arrivalMode: "",
-    chiefComplaint: "",
-    triageCategory: "",
-    triageNurse: "",
-    bpSystolic: "",
-    bpDiastolic: "",
-    heartRate: "",
-    respiratoryRate: "",
-    temperature: "",
-    spo2: "",
-    gcs: "",
-    attendingPhysician: "",
-    hpi: "",
-    physicalExam: "",
-    diagnosticTests: "",
-    interventions: "",
-    edDiagnosis: "",
-    icd10Code: "",
-    disposition: "",
-    dischargeInstructions: "",
-    notes: "",
-  });
+  const [f, setF] = useState<Record<string, string>>(
+    pickRandom(emergencyPresets),
+  );
 
   const set = (k: string, v: string) => setF((p) => ({ ...p, [k]: v }));
 
@@ -54,10 +33,9 @@ export function EmergencyRecordForm({ onSubmit }: { onSubmit: SubmitFn }) {
           />
         </F>
         <F label="Arrival Time">
-          <Input
-            type="time"
+          <TimeField
             value={f.arrivalTime}
-            onChange={(e) => set("arrivalTime", e.target.value)}
+            onChange={(v) => set("arrivalTime", v)}
           />
         </F>
         <F label="Arrival Mode">
@@ -269,22 +247,9 @@ export function EmergencyRecordForm({ onSubmit }: { onSubmit: SubmitFn }) {
 
 // ─── ReferralLetterForm ────────────────────────────────────────────────────────
 export function ReferralLetterForm({ onSubmit }: { onSubmit: SubmitFn }) {
-  const [f, setF] = useState<Record<string, string>>({
-    referralDate: "",
-    urgency: "",
-    referringProvider: "",
-    referringFacility: "",
-    specialtyRequested: "",
-    specificProvider: "",
-    referralReason: "",
-    clinicalSummary: "",
-    relevantDiagnosis: "",
-    icd10Code: "",
-    relevantTests: "",
-    questionsForSpecialist: "",
-    insuranceAuth: "",
-    notes: "",
-  });
+  const [f, setF] = useState<Record<string, string>>(
+    pickRandom(referralPresets),
+  );
 
   const set = (k: string, v: string) => setF((p) => ({ ...p, [k]: v }));
 

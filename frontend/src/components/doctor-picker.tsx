@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Star, MapPin, Clock } from "lucide-react";
 import { getDoctors } from "@/lib/demo-api";
 import type { DemoDoctor } from "@/app/api/demo/store";
+import { countries } from "@/lib/locations";
 
 export interface Doctor {
   address: string;
@@ -17,6 +18,15 @@ export interface Doctor {
   yearsExp: number;
   bio: string;
   available: string;
+}
+
+function formatJurisdiction(jurisdiction: string): string {
+  const parts = jurisdiction.split("-");
+  if (parts.length < 2) return jurisdiction;
+  const country = countries.find((c) => c.code === parts[0]);
+  if (!country) return jurisdiction;
+  const region = country.regions.find((r) => r.code === parts[1]);
+  return region ? `${region.name}, ${country.name}` : country.name;
 }
 
 function DoctorAvatar({ name, address }: { name: string; address: string }) {
@@ -158,7 +168,7 @@ export function DoctorPicker({
           <div className="flex items-center justify-between mt-3 pt-2 border-t border-border">
             <div className="flex items-center gap-1 text-xs text-muted-foreground">
               <MapPin className="h-3 w-3" />
-              {doc.jurisdiction}
+              {formatJurisdiction(doc.jurisdiction)}
             </div>
             <div className="flex items-center gap-3">
               <span className="flex items-center gap-1 text-xs text-emerald-400">

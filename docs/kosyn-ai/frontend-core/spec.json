@@ -1,0 +1,80 @@
+{
+  "app": "kosyn-ai",
+  "section": "frontend-core",
+  "title": "Frontend Core Surfaces",
+  "description": "Smoke coverage for implemented page rendering and basic API liveness in the frontend package.",
+  "executionOrder": 1,
+  "tests": [
+    {
+      "id": "K-FE-1",
+      "title": "Landing page and dashboard pages render without server errors.",
+      "description": "This test verifies that the primary entry pages load successfully under deterministic local conditions. It catches route-level rendering crashes and invalid imports before deeper suites run.",
+      "preconditions": [
+        "frontend dev server is running on localhost",
+        "deterministic fixture headers are enabled where supported"
+      ],
+      "steps": [
+        "Open / and assert HTTP 200",
+        "Open /patients/dashboard and assert no error boundary",
+        "Open /doctors/dashboard and assert no error boundary"
+      ],
+      "successCriteria": "All three pages respond successfully and no server-side 500 occurs.",
+      "mode": "browser",
+      "priority": "smoke",
+      "tags": ["navigation", "render", "smoke"],
+      "dependsOn": [],
+      "fixtures": ["frontend.baseUrl"],
+      "routes": [],
+      "pages": ["/", "/patients/dashboard", "/doctors/dashboard"],
+      "tables": [],
+      "roles": ["patient", "doctor"]
+    },
+    {
+      "id": "K-FE-2",
+      "title": "Core frontend API endpoints respond with non-500 behavior.",
+      "description": "This test validates that feature-support endpoints used by the frontend are reachable and return expected status classes. It is focused on crash detection and route presence rather than deep business assertions.",
+      "preconditions": [
+        "frontend server is running",
+        "test client can call /api/demo and /api/data/[endpoint]"
+      ],
+      "steps": [
+        "Call GET /api/demo",
+        "Call GET /api/data/sample",
+        "Call POST /api/ai/chat with deterministic payload"
+      ],
+      "successCriteria": "No endpoint returns HTTP 500 and each route returns a deterministic structured response or controlled validation error.",
+      "mode": "api",
+      "priority": "smoke",
+      "tags": ["api", "health", "frontend-routes"],
+      "dependsOn": [],
+      "fixtures": ["api.deterministicHeaders"],
+      "routes": ["/api/demo", "/api/data/[endpoint]", "/api/ai/chat"],
+      "pages": [],
+      "tables": [],
+      "roles": ["operator"]
+    },
+    {
+      "id": "K-FE-3",
+      "title": "Doctor and patient consultation detail pages can be opened with dynamic IDs.",
+      "description": "This test verifies dynamic route handling for consultation detail pages. It is intended to catch route param regressions and component crashes caused by malformed loader assumptions.",
+      "preconditions": [
+        "at least one deterministic consultation fixture ID is available"
+      ],
+      "steps": [
+        "Open /patients/consultation/demo-consultation-id",
+        "Open /doctors/consultation/demo-consultation-id",
+        "Confirm both pages remain interactive after hydration"
+      ],
+      "successCriteria": "Both dynamic pages render and hydrate without runtime errors.",
+      "mode": "browser",
+      "priority": "regression",
+      "tags": ["dynamic-route", "consultation"],
+      "dependsOn": ["K-FE-1"],
+      "fixtures": ["seedData.patientRecordId"],
+      "routes": [],
+      "pages": ["/patients/consultation/[id]", "/doctors/consultation/[id]"],
+      "tables": [],
+      "roles": ["doctor", "patient"]
+    }
+  ]
+}

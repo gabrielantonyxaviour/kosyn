@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "mappings": [
+    {
+      "suite": "HealthRecordRegistry.t.sol",
+      "section": "contracts-core",
+      "specIds": ["K-CON-1", "K-CON-2"]
+    }
+  ]
+}

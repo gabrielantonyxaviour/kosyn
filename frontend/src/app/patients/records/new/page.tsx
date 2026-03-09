@@ -21,8 +21,6 @@ import {
   Send,
   AlertCircle,
   GitBranch,
-  Upload,
-  PenLine,
   Search,
   CheckCircle2,
   Dumbbell,
@@ -45,7 +43,6 @@ import {
   DischargeSummaryForm,
   MentalHealthForm,
   GenericMedicalForm,
-  UploadForm,
 } from "./forms";
 import {
   ImagingReportForm,
@@ -82,8 +79,7 @@ type TemplateId =
   | "nutrition-assessment"
   | "genetic-report";
 
-type EntryMethod = "manual" | "upload";
-type Phase = "type" | "method" | "form";
+type Phase = "type" | "form";
 
 // ─── Template registry ────────────────────────────────────────────────────────
 const templates: {
@@ -314,13 +310,8 @@ const CRE_RECORD_TYPE: Record<TemplateId, number> = {
   "genetic-report": 0,
 };
 
-function getRecordLabel(
-  id: TemplateId,
-  method: EntryMethod,
-  data: Record<string, string>,
-): string {
+function getRecordLabel(id: TemplateId, data: Record<string, string>): string {
   const base = templates.find((t) => t.id === id)?.label ?? "Health Record";
-  if (method === "upload") return data.label || `${base} (PDF)`;
   switch (id) {
     case "vitals":
       return data.bpSystolic
@@ -393,8 +384,7 @@ function getRecordLabel(
 
 const PHASES: { key: Phase; label: string; num: number }[] = [
   { key: "type", label: "Record Type", num: 1 },
-  { key: "method", label: "Entry Method", num: 2 },
-  { key: "form", label: "Details", num: 3 },
+  { key: "form", label: "Details", num: 2 },
 ];
 
 // Forms with dedicated clinical implementations
@@ -424,7 +414,6 @@ const SPECIFIC_FORM_IDS: TemplateId[] = [
 export default function NewRecordPage() {
   const [phase, setPhase] = useState<Phase>("type");
   const [selected, setSelected] = useState<TemplateId | null>(null);
-  const [method, setMethod] = useState<EntryMethod | null>(null);
   const [search, setSearch] = useState("");
   const [creActive, setCreActive] = useState(false);
   const account = useActiveAccount();
@@ -433,18 +422,12 @@ export default function NewRecordPage() {
   const currentIdx = PHASES.findIndex((p) => p.key === phase);
   const canGoTo = (p: Phase) => {
     if (p === "type") return true;
-    if (p === "method") return !!selected;
-    if (p === "form") return !!selected && !!method;
+    if (p === "form") return !!selected;
     return false;
   };
 
   const handleTypeSelect = (id: TemplateId) => {
     setSelected(id);
-    setMethod(null);
-    setPhase("method");
-  };
-  const handleMethodSelect = (m: EntryMethod) => {
-    setMethod(m);
     setPhase("form");
   };
 
@@ -454,7 +437,7 @@ export default function NewRecordPage() {
         ? "Touch ID / Face ID required to encrypt your health record..."
         : "Encrypting health record...",
     );
-    const plaintext = JSON.stringify({ type: selected, method, ...data });
+    const plaintext = JSON.stringify({ type: selected, ...data });
     const encryptedBlob = await encryptData(plaintext);
     if (!encryptedBlob) {
       toast.error(
@@ -477,7 +460,7 @@ export default function NewRecordPage() {
       patientAddress: patientAddr,
       recordType: TEMPLATE_TO_RECORD_TYPE[selected!],
       templateType: selected!,
-      label: getRecordLabel(selected!, method!, data),
+      label: getRecordLabel(selected!, data),
       createdBy: "patient",
       createdByAddress: patientAddr,
       formData: data,
@@ -498,8 +481,8 @@ export default function NewRecordPage() {
       <div>
         <h1 className="text-2xl font-bold">Create Health Record</h1>
         <p className="text-sm text-muted-foreground">
-          Choose a record type, then enter data manually or upload a document.
-          All data is encrypted inside a TEE enclave.
+          Choose a record type and enter your data. All records are encrypted
+          inside a TEE enclave.
         </p>
       </div>
 
@@ -606,129 +589,81 @@ export default function NewRecordPage() {
             </div>
           )}
 
-          {/* Phase 2: Entry method */}
-          {phase === "method" && tpl && (
-            <div className="flex flex-col gap-4 flex-1">
-              <div className="flex items-center gap-3 p-4 rounded-lg border border-border bg-muted/10">
-                <tpl.icon className={`h-5 w-5 ${tpl.color}`} />
-                <div>
-                  <p className="text-sm font-medium">{tpl.label}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {tpl.description}
-                  </p>
-                </div>
-              </div>
-              <p className="text-sm font-medium">
-                How would you like to add this record?
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 flex-1">
-                <button
-                  onClick={() => handleMethodSelect("manual")}
-                  className="rounded-xl border-2 border-border hover:border-primary/60 hover:bg-primary/5 p-8 text-left transition-all group"
-                >
-                  <PenLine className="h-8 w-8 text-muted-foreground group-hover:text-primary mb-4 transition-colors" />
-                  <p className="font-semibold">Enter Manually</p>
-                  <p className="text-xs text-muted-foreground mt-1.5">
-                    Fill in a structured form with guided clinical fields
-                    tailored to this record type.
-                  </p>
-                </button>
-                <button
-                  onClick={() => handleMethodSelect("upload")}
-                  className="rounded-xl border-2 border-border hover:border-primary/60 hover:bg-primary/5 p-8 text-left transition-all group"
-                >
-                  <Upload className="h-8 w-8 text-muted-foreground group-hover:text-primary mb-4 transition-colors" />
-                  <p className="font-semibold">Upload Document</p>
-                  <p className="text-xs text-muted-foreground mt-1.5">
-                    Upload an existing PDF or image to encrypt and store on IPFS
-                    via CRE.
-                  </p>
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Phase 3: Form */}
-          {phase === "form" && selected && method && tpl && (
+          {/* Phase 2: Form */}
+          {phase === "form" && selected && tpl && (
             <div className="flex flex-col gap-4 flex-1">
               <div className="flex items-center gap-3 p-4 rounded-lg border border-border bg-muted/10">
                 <tpl.icon className={`h-5 w-5 ${tpl.color}`} />
                 <div className="flex-1">
                   <p className="text-sm font-medium">{tpl.label}</p>
                   <p className="text-xs text-muted-foreground">
-                    {method === "upload" ? "Document upload" : "Manual entry"}
+                    {tpl.description}
                   </p>
                 </div>
               </div>
               <div className="rounded-lg border border-border p-5 flex-1 overflow-auto">
-                {method === "upload" ? (
-                  <UploadForm onSubmit={handleSubmit} />
-                ) : (
-                  <>
-                    {selected === "vitals" && (
-                      <VitalsForm onSubmit={handleSubmit} />
-                    )}
-                    {selected === "medical-history" && (
-                      <MedHistoryForm onSubmit={handleSubmit} />
-                    )}
-                    {selected === "medications" && (
-                      <MedicationsForm onSubmit={handleSubmit} />
-                    )}
-                    {selected === "lab-results" && (
-                      <LabResultsForm onSubmit={handleSubmit} />
-                    )}
-                    {selected === "vaccination-record" && (
-                      <VaccinationForm onSubmit={handleSubmit} />
-                    )}
-                    {selected === "cardiology-report" && (
-                      <CardiologyForm onSubmit={handleSubmit} />
-                    )}
-                    {selected === "allergy-profile" && (
-                      <AllergyProfileForm onSubmit={handleSubmit} />
-                    )}
-                    {selected === "surgical-report" && (
-                      <SurgicalReportForm onSubmit={handleSubmit} />
-                    )}
-                    {selected === "discharge-summary" && (
-                      <DischargeSummaryForm onSubmit={handleSubmit} />
-                    )}
-                    {selected === "mental-health" && (
-                      <MentalHealthForm onSubmit={handleSubmit} />
-                    )}
-                    {selected === "imaging-report" && (
-                      <ImagingReportForm onSubmit={handleSubmit} />
-                    )}
-                    {selected === "pathology-report" && (
-                      <PathologyReportForm onSubmit={handleSubmit} />
-                    )}
-                    {selected === "genetic-report" && (
-                      <GeneticReportForm onSubmit={handleSubmit} />
-                    )}
-                    {selected === "vision-exam" && (
-                      <VisionExamForm onSubmit={handleSubmit} />
-                    )}
-                    {selected === "dental-record" && (
-                      <DentalRecordForm onSubmit={handleSubmit} />
-                    )}
-                    {selected === "physical-therapy" && (
-                      <PhysicalTherapyForm onSubmit={handleSubmit} />
-                    )}
-                    {selected === "nutrition-assessment" && (
-                      <NutritionAssessmentForm onSubmit={handleSubmit} />
-                    )}
-                    {selected === "emergency-record" && (
-                      <EmergencyRecordForm onSubmit={handleSubmit} />
-                    )}
-                    {selected === "referral-letter" && (
-                      <ReferralLetterForm onSubmit={handleSubmit} />
-                    )}
-                    {!SPECIFIC_FORM_IDS.includes(selected) && (
-                      <GenericMedicalForm
-                        templateId={selected}
-                        onSubmit={handleSubmit}
-                      />
-                    )}
-                  </>
+                {selected === "vitals" && (
+                  <VitalsForm onSubmit={handleSubmit} />
+                )}
+                {selected === "medical-history" && (
+                  <MedHistoryForm onSubmit={handleSubmit} />
+                )}
+                {selected === "medications" && (
+                  <MedicationsForm onSubmit={handleSubmit} />
+                )}
+                {selected === "lab-results" && (
+                  <LabResultsForm onSubmit={handleSubmit} />
+                )}
+                {selected === "vaccination-record" && (
+                  <VaccinationForm onSubmit={handleSubmit} />
+                )}
+                {selected === "cardiology-report" && (
+                  <CardiologyForm onSubmit={handleSubmit} />
+                )}
+                {selected === "allergy-profile" && (
+                  <AllergyProfileForm onSubmit={handleSubmit} />
+                )}
+                {selected === "surgical-report" && (
+                  <SurgicalReportForm onSubmit={handleSubmit} />
+                )}
+                {selected === "discharge-summary" && (
+                  <DischargeSummaryForm onSubmit={handleSubmit} />
+                )}
+                {selected === "mental-health" && (
+                  <MentalHealthForm onSubmit={handleSubmit} />
+                )}
+                {selected === "imaging-report" && (
+                  <ImagingReportForm onSubmit={handleSubmit} />
+                )}
+                {selected === "pathology-report" && (
+                  <PathologyReportForm onSubmit={handleSubmit} />
+                )}
+                {selected === "genetic-report" && (
+                  <GeneticReportForm onSubmit={handleSubmit} />
+                )}
+                {selected === "vision-exam" && (
+                  <VisionExamForm onSubmit={handleSubmit} />
+                )}
+                {selected === "dental-record" && (
+                  <DentalRecordForm onSubmit={handleSubmit} />
+                )}
+                {selected === "physical-therapy" && (
+                  <PhysicalTherapyForm onSubmit={handleSubmit} />
+                )}
+                {selected === "nutrition-assessment" && (
+                  <NutritionAssessmentForm onSubmit={handleSubmit} />
+                )}
+                {selected === "emergency-record" && (
+                  <EmergencyRecordForm onSubmit={handleSubmit} />
+                )}
+                {selected === "referral-letter" && (
+                  <ReferralLetterForm onSubmit={handleSubmit} />
+                )}
+                {!SPECIFIC_FORM_IDS.includes(selected) && (
+                  <GenericMedicalForm
+                    templateId={selected}
+                    onSubmit={handleSubmit}
+                  />
                 )}
               </div>
             </div>

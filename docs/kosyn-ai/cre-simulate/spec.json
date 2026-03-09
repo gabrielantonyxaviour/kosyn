@@ -1,0 +1,86 @@
+{
+  "app": "kosyn-ai",
+  "section": "cre-simulate",
+  "title": "CRE Workflow Simulation",
+  "description": "Deterministic CRE simulation coverage. All workflow validation in this section must run via `cre workflow simulate` only.",
+  "executionOrder": 4,
+  "sectionDependsOn": ["kosyn-ai/frontend-core"],
+  "tests": [
+    {
+      "id": "K-CRE-1",
+      "title": "record-upload workflow simulation succeeds with deterministic encrypted payload fixture.",
+      "description": "This test ensures record-upload can execute in CRE simulation with fixed payload and deterministic runtime configuration. It catches runtime import/config regressions in the workflow package.",
+      "preconditions": [
+        "cre CLI is available",
+        "workflows package dependencies are installed",
+        "record-upload fixture exists"
+      ],
+      "steps": [
+        "Run cre workflow simulate record-upload with docs/fixtures/workflows/record-upload.json",
+        "Capture simulation output log",
+        "Assert simulation exits successfully"
+      ],
+      "successCriteria": "Simulation command exits with success and produces expected execution log structure.",
+      "mode": "manual",
+      "priority": "smoke",
+      "tags": ["cre", "simulate", "record-upload"],
+      "dependsOn": [],
+      "fixtures": ["workflows.entries.record-upload.payloadFixture"],
+      "routes": [],
+      "pages": [],
+      "tables": ["health_records"],
+      "roles": ["operator"]
+    },
+    {
+      "id": "K-CRE-2",
+      "title": "consultation-processing and data-aggregation workflows simulate successfully with fixed fixtures.",
+      "description": "This test validates two workflow paths with deterministic fixtures to catch runtime drift and broken imports across workflow modules. It ensures both workflows remain executable in local deterministic environments.",
+      "preconditions": [
+        "consultation-processing fixture exists",
+        "data-aggregation fixture exists"
+      ],
+      "steps": [
+        "Run cre workflow simulate consultation-processing with its fixture",
+        "Run cre workflow simulate data-aggregation with its fixture",
+        "Verify both commands exit successfully"
+      ],
+      "successCriteria": "Both workflow simulations exit successfully and emit expected execution traces.",
+      "mode": "manual",
+      "priority": "regression",
+      "tags": ["cre", "simulate", "consultation", "aggregation"],
+      "dependsOn": ["K-CRE-1"],
+      "fixtures": [
+        "workflows.entries.consultation-processing.payloadFixture",
+        "workflows.entries.data-aggregation.payloadFixture"
+      ],
+      "routes": [],
+      "pages": [],
+      "tables": ["consultations"],
+      "roles": ["operator"]
+    },
+    {
+      "id": "K-CRE-3",
+      "title": "payment-mint workflow simulation completes and output can be mapped to deterministic result artifact.",
+      "description": "This test verifies the payment-mint workflow simulation and checks that output is captured to a deterministic artifact path for history. It prevents silent run success without persisted evidence.",
+      "preconditions": [
+        "payment-mint fixture exists",
+        "ctest result writer script is configured"
+      ],
+      "steps": [
+        "Run cre workflow simulate payment-mint with fixture",
+        "Write simulation output to docs/evidence/cre/",
+        "Validate evidence file path is included in results metadata"
+      ],
+      "successCriteria": "Simulation succeeds and evidence artifact is written and linkable from results.json.",
+      "mode": "manual",
+      "priority": "deep",
+      "tags": ["cre", "payment", "evidence"],
+      "dependsOn": ["K-CRE-1"],
+      "fixtures": ["workflows.entries.payment-mint.payloadFixture"],
+      "routes": [],
+      "pages": [],
+      "tables": ["payments"],
+      "roles": ["operator"]
+    }
+  ]
+}

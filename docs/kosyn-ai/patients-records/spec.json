@@ -1,0 +1,82 @@
+{
+  "app": "kosyn-ai",
+  "section": "patients-records",
+  "title": "Patient Records Flow",
+  "description": "Regression coverage for encrypted record creation, storage, and retrieval surfaces.",
+  "executionOrder": 2,
+  "sectionDependsOn": ["kosyn-ai/frontend-core"],
+  "tests": [
+    {
+      "id": "K-PR-1",
+      "title": "Patient records list page shows deterministic records without rendering failures.",
+      "description": "This test ensures that the records index page can load and display expected deterministic fixtures. It catches state hydration and query wiring bugs in records presentation.",
+      "preconditions": [
+        "frontend is running",
+        "a deterministic patient record fixture exists"
+      ],
+      "steps": [
+        "Open /patients/records",
+        "Wait for records list query to settle",
+        "Verify at least one deterministic row or empty-state placeholder is visible"
+      ],
+      "successCriteria": "The records page renders and no unhandled exception occurs during list loading.",
+      "mode": "browser",
+      "priority": "regression",
+      "tags": ["records", "patient", "ui"],
+      "dependsOn": ["K-FE-1"],
+      "fixtures": ["seedData.patientRecordId"],
+      "routes": [],
+      "pages": ["/patients/records"],
+      "tables": ["health_records"],
+      "roles": ["patient"]
+    },
+    {
+      "id": "K-PR-2",
+      "title": "Encrypted record save API accepts valid deterministic payloads.",
+      "description": "This test validates the encryption-save API contract used by the record creation flow. It fails if payload validation drifts or backend dependencies break.",
+      "preconditions": [
+        "POST /api/records/encrypt-save is reachable",
+        "fixture encrypted blob is available"
+      ],
+      "steps": [
+        "POST deterministic payload to /api/records/encrypt-save",
+        "Capture response body and status code",
+        "Assert response shape includes persisted reference or explicit validation reason"
+      ],
+      "successCriteria": "Request does not produce 500 and response contract matches expected shape.",
+      "mode": "api",
+      "priority": "regression",
+      "tags": ["records", "encryption", "api"],
+      "dependsOn": [],
+      "fixtures": ["workflows.entries.record-upload.payloadFixture"],
+      "routes": ["/api/records/encrypt-save"],
+      "pages": [],
+      "tables": ["health_records", "ipfs_metadata"],
+      "roles": ["patient"]
+    },
+    {
+      "id": "K-PR-3",
+      "title": "IPFS upload and fetch routes can roundtrip deterministic content references.",
+      "description": "This test verifies that upload and fetch endpoints are aligned and usable in one flow. It catches shape mismatches and transport errors that break record retrieval.",
+      "preconditions": [
+        "IPFS routes are available in frontend API",
+        "deterministic encrypted content fixture is available"
+      ],
+      "steps": [
+        "POST payload to /api/ipfs/upload",
+        "Extract returned CID-like identifier",
+        "GET /api/ipfs/fetch with the returned reference"
+      ],
+      "successCriteria": "Both upload and fetch complete without HTTP 500 and fetch returns retrievable payload data.",
+      "mode": "hybrid",
+      "priority": "deep",
+      "tags": ["ipfs", "records", "roundtrip"],
+      "dependsOn": ["K-PR-2"],
+      "fixtures": ["workflows.entries.record-upload.payloadFixture"],
+      "routes": ["/api/ipfs/upload", "/api/ipfs/fetch"],
+      "pages": ["/patients/records/new", "/patients/records/share"],
+      "tables": ["ipfs_metadata"],
+      "roles": ["patient", "doctor"]
+    }
+  ]
+}

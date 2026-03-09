@@ -1,0 +1,151 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "test": {
+      "type": "object",
+      "required": [
+        "id",
+        "title",
+        "description",
+        "preconditions",
+        "steps",
+        "successCriteria",
+        "mode",
+        "priority"
+      ],
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "preconditions": { "type": "array", "items": { "type": "string" } },
+        "steps": { "type": "array", "items": { "type": "string" } },
+        "successCriteria": { "type": "string" },
+        "mode": {
+          "type": "string",
+          "enum": ["api", "browser", "hybrid", "manual"]
+        },
+        "priority": {
+          "type": "string",
+          "enum": ["smoke", "regression", "deep"]
+        },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "dependsOn": { "type": "array", "items": { "type": "string" } },
+        "fixtures": { "type": "array", "items": { "type": "string" } },
+        "routes": { "type": "array", "items": { "type": "string" } },
+        "pages": { "type": "array", "items": { "type": "string" } },
+        "tables": { "type": "array", "items": { "type": "string" } },
+        "roles": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "spec": {
+      "type": "object",
+      "required": ["app", "section", "title", "executionOrder", "tests"],
+      "properties": {
+        "app": { "type": "string" },
+        "section": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "executionOrder": { "type": "integer" },
+        "sectionDependsOn": { "type": "array", "items": { "type": "string" } },
+        "tests": { "type": "array", "items": { "$ref": "#/definitions/test" } }
+      }
+    },
+    "runEvidence": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "screenshot",
+            "trace",
+            "log",
+            "report",
+            "curl-output",
+            "simulate-output",
+            "forge-output"
+          ]
+        },
+        "path": { "type": "string" },
+        "description": { "type": "string" }
+      }
+    },
+    "runRecord": {
+      "type": "object",
+      "required": ["ranAt", "runner"],
+      "properties": {
+        "ranAt": { "type": "string", "format": "date-time" },
+        "runner": {
+          "type": "string",
+          "enum": ["atest", "btest", "ctest", "contract", "manual", "feature"]
+        },
+        "role": { "type": "string" },
+        "environment": {
+          "type": "object",
+          "properties": {
+            "baseUrl": { "type": "string" },
+            "gitSha": { "type": "string" },
+            "browser": { "type": "string" }
+          }
+        },
+        "durationMs": { "type": "number" },
+        "evidence": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/runEvidence" }
+        }
+      }
+    },
+    "resultEntry": {
+      "type": "object",
+      "required": ["id", "status"],
+      "properties": {
+        "id": { "type": "string" },
+        "status": {
+          "type": "string",
+          "enum": [
+            "pass",
+            "fail",
+            "skip",
+            "pending",
+            "blocked",
+            "not_applicable"
+          ]
+        },
+        "notes": { "type": "string" },
+        "skipReason": { "type": "string" },
+        "blockedBy": { "type": "array", "items": { "type": "string" } },
+        "lastRun": { "$ref": "#/definitions/runRecord" },
+        "history": {
+          "type": "array",
+          "maxItems": 5,
+          "items": {
+            "type": "object",
+            "properties": {
+              "ranAt": { "type": "string", "format": "date-time" },
+              "status": { "type": "string" },
+              "runner": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "results": {
+      "type": "object",
+      "required": ["app", "section", "results"],
+      "properties": {
+        "app": { "type": "string" },
+        "section": { "type": "string" },
+        "lastRun": { "type": ["string", "null"], "format": "date-time" },
+        "runner": {
+          "type": "string",
+          "enum": ["atest", "btest", "ctest", "contract", "manual", "feature"]
+        },
+        "sectionSkip": { "type": "boolean" },
+        "sectionSkipReason": { "type": "string" },
+        "results": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/resultEntry" }
+        }
+      }
+    }
+  }
+}

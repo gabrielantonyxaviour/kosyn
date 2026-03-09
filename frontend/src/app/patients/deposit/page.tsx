@@ -125,7 +125,7 @@ function DepositContent() {
                   className={`h-2 w-2 rounded-full ${creOnline ? "bg-emerald-400" : "bg-red-400"}`}
                 />
                 <span className="text-xs text-muted-foreground">
-                  {creOnline ? "Processor online" : "Processor offline"}
+                  {creOnline ? "CRE online" : "CRE offline"}
                 </span>
               </div>
             )}
@@ -139,8 +139,15 @@ function DepositContent() {
             <div className="mb-4 flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2.5">
               <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
               <p className="text-xs text-amber-300">
-                Card deposits are temporarily unavailable. The payment processor
-                is offline.
+                The CRE service is currently offline. Card deposits require CRE
+                to process payments. Please reach out to{" "}
+                <a
+                  href="mailto:gabrielantony56@gmail.com"
+                  className="underline hover:text-amber-200"
+                >
+                  gabrielantony56@gmail.com
+                </a>{" "}
+                to have it turned back on.
               </p>
             </div>
           )}
@@ -199,7 +206,7 @@ function DepositContent() {
             {loading ? (
               "Redirecting…"
             ) : creOnline === false ? (
-              "Deposits unavailable"
+              "CRE offline — deposits unavailable"
             ) : (
               <>
                 Pay ${effectiveAmount || "—"} with Stripe

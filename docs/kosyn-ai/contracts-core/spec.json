@@ -1,0 +1,58 @@
+{
+  "app": "kosyn-ai",
+  "section": "contracts-core",
+  "title": "Contracts Core",
+  "description": "Deterministic contract test coverage mapped from Foundry suites to spec IDs.",
+  "executionOrder": 5,
+  "sectionDependsOn": ["kosyn-ai/frontend-core"],
+  "tests": [
+    {
+      "id": "K-CON-1",
+      "title": "HealthRecordRegistry Foundry suite passes under deterministic forge execution.",
+      "description": "This test validates the primary registry contract behavior through the existing Foundry test suite. It catches storage and policy enforcement regressions at the contract layer.",
+      "preconditions": [
+        "contracts dependencies are installed",
+        "forge is available in PATH"
+      ],
+      "steps": [
+        "Run forge test --json in contracts package",
+        "Filter outputs for HealthRecordRegistry suite",
+        "Map pass/fail to results artifact"
+      ],
+      "successCriteria": "HealthRecordRegistry test suite passes and mapper writes deterministic result evidence.",
+      "mode": "manual",
+      "priority": "regression",
+      "tags": ["contracts", "forge", "registry"],
+      "dependsOn": [],
+      "fixtures": [],
+      "routes": [],
+      "pages": [],
+      "tables": ["health_records", "consents"],
+      "roles": ["operator"]
+    },
+    {
+      "id": "K-CON-2",
+      "title": "Policy engine and ACE policy contracts compile and execute referenced tests without errors.",
+      "description": "This test protects policy-related contract wiring by asserting the forge run does not contain compile/runtime failures for ACE contracts. It guards against accidental policy interface drift.",
+      "preconditions": [
+        "forge cache is clean or reproducible",
+        "contracts/src/ace remains in sync with interfaces"
+      ],
+      "steps": [
+        "Run forge test --json",
+        "Inspect output for ace policy test failures or compilation errors",
+        "Persist failure details to contract evidence log if any"
+      ],
+      "successCriteria": "No ACE policy compile or runtime failures are present in the forge output.",
+      "mode": "manual",
+      "priority": "deep",
+      "tags": ["contracts", "ace", "policy"],
+      "dependsOn": ["K-CON-1"],
+      "fixtures": [],
+      "routes": [],
+      "pages": [],
+      "tables": ["policy_rules"],
+      "roles": ["operator"]
+    }
+  ]
+}

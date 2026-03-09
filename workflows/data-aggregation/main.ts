@@ -9,6 +9,8 @@ import {
   decodeJson,
   text,
   consensusIdenticalAggregation,
+  encodeCallMsg,
+  bytesToHex,
 } from "@chainlink/cre-sdk";
 import {
   aggregateDemographics,
@@ -64,16 +66,18 @@ const onHttpTrigger = (
   const httpClient = new HTTPClient();
 
   // --- Step 1: Get active contributors from DataMarketplace ---
-  const getContributors = evmClient.callContract(
-    runtime,
-    {
+  const zeroAddr =
+    "0x0000000000000000000000000000000000000000" as `0x${string}`;
+  const getContributors = evmClient.callContract(runtime, {
+    call: encodeCallMsg({
+      from: zeroAddr,
       to: runtime.config.dataMarketplaceAddress as `0x${string}`,
       data: "0x806f5a5c", // getActiveContributors() selector
-    },
-    consensusIdenticalAggregation<string>(),
-  );
+    }),
+  });
 
-  const contributorsRaw = getContributors().result();
+  const contributorsResult = getContributors.result();
+  const contributorsRaw = bytesToHex(contributorsResult.data);
   // ABI-decode address[] — skip first 64 bytes (offset + length), then 20-byte addresses
   const contributors: string[] = [];
   try {
@@ -99,16 +103,15 @@ const onHttpTrigger = (
     const getKeySelector = "0x49d5fb72"; // getMarketplaceKey(address) selector
     const paddedAddr = patient.slice(2).padStart(64, "0");
 
-    const getKey = evmClient.callContract(
-      runtime,
-      {
+    const getKey = evmClient.callContract(runtime, {
+      call: encodeCallMsg({
+        from: zeroAddr,
         to: runtime.config.dataMarketplaceAddress as `0x${string}`,
         data: `0x${getKeySelector.slice(2)}${paddedAddr}` as `0x${string}`,
-      },
-      consensusIdenticalAggregation<string>(),
-    );
+      }),
+    });
 
-    const keyRaw = getKey().result();
+    const keyRaw = bytesToHex(getKey.result().data);
 
     // Skip patients who haven't registered a marketplace key
     if (!keyRaw || keyRaw === "0x" || keyRaw.length < 10) {
@@ -145,16 +148,15 @@ const onHttpTrigger = (
 
     // --- Step 2c: Get record IDs from HealthRecordRegistry ---
     const getRecordsSelector = "0x3aabf8b6"; // getPatientRecords(address) selector
-    const getRecords = evmClient.callContract(
-      runtime,
-      {
+    const getRecords = evmClient.callContract(runtime, {
+      call: encodeCallMsg({
+        from: zeroAddr,
         to: runtime.config.healthRecordRegistryAddress as `0x${string}`,
         data: `0x${getRecordsSelector.slice(2)}${paddedAddr}` as `0x${string}`,
-      },
-      consensusIdenticalAggregation<string>(),
-    );
+      }),
+    });
 
-    const recordsRaw = getRecords().result();
+    const recordsRaw = bytesToHex(getRecords.result().data);
     const recordIds: number[] = [];
     try {
       const hex = recordsRaw.startsWith("0x")
@@ -176,16 +178,15 @@ const onHttpTrigger = (
       // Get record CID from registry
       const getRecordSelector = "0x8f90e575"; // getRecord(uint256) selector
       const paddedId = recordId.toString(16).padStart(64, "0");
-      const getRecord = evmClient.callContract(
-        runtime,
-        {
+      const getRecord = evmClient.callContract(runtime, {
+        call: encodeCallMsg({
+          from: zeroAddr,
           to: runtime.config.healthRecordRegistryAddress as `0x${string}`,
           data: `0x${getRecordSelector.slice(2)}${paddedId}` as `0x${string}`,
-        },
-        consensusIdenticalAggregation<string>(),
-      );
+        }),
+      });
 
-      const recordRaw = getRecord().result();
+      const recordRaw = bytesToHex(getRecord.result().data);
 
       // Parse CID from ABI-decoded tuple (first string field)
       let ipfsCid: string;

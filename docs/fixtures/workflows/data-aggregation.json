@@ -1,0 +1,7 @@
+{
+  "endpoint": "demographics",
+  "queryId": 1,
+  "patientAddress": "0x000000000000000000000000000000000000bEEF",
+  "windowHours": 24,
+  "requestId": "agg-demo-001"
+}

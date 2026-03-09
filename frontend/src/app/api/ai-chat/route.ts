@@ -60,6 +60,7 @@ Rules:
   const stream = new ReadableStream({
     async start(controller) {
       try {
+        // Use non-streaming so Nillion returns the signature proof
         const nillionRes = await fetch(
           `${NILLION_BASE_URL}/v1/chat/completions`,
           {
@@ -72,7 +73,7 @@ Rules:
               model: NILLION_MODEL,
               messages,
               temperature: 0.2,
-              stream: true,
+              stream: false,
             }),
           },
         );
@@ -91,69 +92,42 @@ Rules:
           return;
         }
 
-        const reader = nillionRes.body?.getReader();
-        if (!reader) {
-          controller.enqueue(
-            encoder.encode(
-              JSON.stringify({ type: "error", content: "No response body" }) +
-                "\n",
-            ),
-          );
-          controller.close();
-          return;
-        }
+        const data = (await nillionRes.json()) as {
+          choices?: Array<{ message?: { content?: string } }>;
+          signature?: string;
+          model?: string;
+        };
 
-        const decoder = new TextDecoder();
-        let buffer = "";
-        let lastSignature: string | null = null;
-        let lastModel: string | null = null;
+        const content = data.choices?.[0]?.message?.content ?? "";
 
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split("\n");
-          buffer = lines.pop() ?? "";
-
-          for (const line of lines) {
-            const trimmed = line.trim();
-            if (!trimmed || !trimmed.startsWith("data: ")) continue;
-            const payload = trimmed.slice(6);
-            if (payload === "[DONE]") continue;
-
-            try {
-              const chunk = JSON.parse(payload) as {
-                choices?: Array<{
-                  delta?: { content?: string };
-                  finish_reason?: string | null;
-                }>;
-                signature?: string;
-                model?: string;
-              };
-
-              if (chunk.signature) lastSignature = chunk.signature;
-              if (chunk.model) lastModel = chunk.model;
-
-              const content = chunk.choices?.[0]?.delta?.content;
-              if (typeof content === "string" && content) {
-                controller.enqueue(
-                  encoder.encode(
-                    JSON.stringify({ type: "text", content }) + "\n",
-                  ),
-                );
-              }
-            } catch {
-              // skip malformed lines
-            }
+        // Simulate streaming by sending text in word-sized chunks
+        const words = content.split(/(?<=\s)/);
+        let batch = "";
+        for (const word of words) {
+          batch += word;
+          if (batch.length >= 8) {
+            controller.enqueue(
+              encoder.encode(
+                JSON.stringify({ type: "text", content: batch }) + "\n",
+              ),
+            );
+            batch = "";
           }
         }
+        if (batch) {
+          controller.enqueue(
+            encoder.encode(
+              JSON.stringify({ type: "text", content: batch }) + "\n",
+            ),
+          );
+        }
 
+        // Send done with proof from the non-streaming signature
         const donePayload: Record<string, unknown> = { type: "done" };
-        if (lastSignature) {
+        if (data.signature) {
           donePayload.proof = {
-            signature: lastSignature,
-            model: lastModel ?? NILLION_MODEL,
+            signature: data.signature,
+            model: data.model ?? NILLION_MODEL,
             timestamp: Date.now(),
           };
         }

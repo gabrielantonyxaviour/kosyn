@@ -1,0 +1,80 @@
+{
+  "app": "kosyn-ai",
+  "section": "payments-webhooks",
+  "title": "Payments and Webhooks",
+  "description": "Regression tests for checkout/deposit initiation and webhook ingestion surfaces.",
+  "executionOrder": 3,
+  "sectionDependsOn": ["kosyn-ai/frontend-core"],
+  "tests": [
+    {
+      "id": "K-PAY-1",
+      "title": "Patient deposit page can initiate checkout flow without client crashes.",
+      "description": "This browser test validates that the deposit UI wiring can trigger checkout requests and handle pending states. It is designed to detect frontend integration regressions quickly.",
+      "preconditions": [
+        "frontend running",
+        "payment environment variables are configured for local run"
+      ],
+      "steps": [
+        "Open /patients/deposit",
+        "Trigger deposit action with deterministic amount",
+        "Assert the UI transitions to expected pending or redirect state"
+      ],
+      "successCriteria": "Deposit action does not crash the UI and emits one checkout/deposit API request.",
+      "mode": "browser",
+      "priority": "regression",
+      "tags": ["payments", "deposit", "ui"],
+      "dependsOn": ["K-FE-1"],
+      "fixtures": [],
+      "routes": ["/api/stripe/checkout", "/api/stripe/deposit"],
+      "pages": ["/patients/deposit"],
+      "tables": ["payment_intents"],
+      "roles": ["patient"]
+    },
+    {
+      "id": "K-PAY-2",
+      "title": "Stripe checkout and deposit endpoints handle deterministic requests with stable response contracts.",
+      "description": "This API test validates request/response behavior of checkout and deposit route handlers under deterministic payloads. It catches status and schema regressions that break frontend payment orchestration.",
+      "preconditions": [
+        "frontend server exposes /api/stripe/checkout and /api/stripe/deposit"
+      ],
+      "steps": [
+        "POST deterministic payload to /api/stripe/checkout",
+        "POST deterministic payload to /api/stripe/deposit",
+        "Assert non-500 status and stable JSON contracts"
+      ],
+      "successCriteria": "Both routes respond with non-500 statuses and expected keys for downstream processing.",
+      "mode": "api",
+      "priority": "regression",
+      "tags": ["payments", "stripe", "api"],
+      "dependsOn": [],
+      "fixtures": [],
+      "routes": ["/api/stripe/checkout", "/api/stripe/deposit"],
+      "pages": [],
+      "tables": ["payment_intents"],
+      "roles": ["operator"]
+    },
+    {
+      "id": "K-PAY-3",
+      "title": "Stripe webhook route rejects malformed payloads and accepts signed deterministic fixtures.",
+      "description": "This API test validates webhook guard behavior by sending malformed and deterministic signed payloads. It catches insecure acceptance logic and parser regressions in webhook processing.",
+      "preconditions": [
+        "webhook route is reachable",
+        "deterministic webhook fixtures are available"
+      ],
+      "steps": [
+        "POST malformed payload to /api/stripe/webhook and verify controlled rejection",
+        "POST deterministic valid-like payload and verify non-500 handling path"
+      ],
+      "successCriteria": "Malformed payload is rejected without 500 and valid-like deterministic payload is processed by the expected branch.",
+      "mode": "api",
+      "priority": "deep",
+      "tags": ["webhook", "stripe", "security"],
+      "dependsOn": ["K-PAY-2"],
+      "fixtures": [],
+      "routes": ["/api/stripe/webhook"],
+      "pages": [],
+      "tables": ["payment_events"],
+      "roles": ["operator"]
+    }
+  ]
+}

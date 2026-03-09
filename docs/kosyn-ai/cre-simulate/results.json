@@ -1,0 +1,143 @@
+{
+  "app": "kosyn-ai",
+  "section": "cre-simulate",
+  "lastRun": "2026-03-09T14:07:26.184Z",
+  "runner": "ctest",
+  "results": [
+    {
+      "id": "K-CRE-1",
+      "status": "pass",
+      "notes": "CRE simulate passed for record-upload",
+      "history": [
+        {
+          "ranAt": "2026-03-09T13:34:10.609Z",
+          "status": "pass",
+          "runner": "ctest"
+        },
+        {
+          "ranAt": "2026-03-09T13:31:59.070Z",
+          "status": "pass",
+          "runner": "ctest"
+        },
+        {
+          "ranAt": "2026-03-09T13:21:30.104Z",
+          "status": "pass",
+          "runner": "ctest"
+        },
+        {
+          "ranAt": "2026-03-09T13:18:13.227Z",
+          "status": "pass",
+          "runner": "ctest"
+        },
+        {
+          "ranAt": "2026-03-09T13:15:35.064Z",
+          "status": "fail",
+          "runner": "ctest"
+        }
+      ],
+      "lastRun": {
+        "ranAt": "2026-03-09T14:05:25.030Z",
+        "runner": "ctest",
+        "environment": {
+          "gitSha": "3dc905d"
+        },
+        "evidence": [
+          {
+            "type": "simulate-output",
+            "path": "docs/evidence/cre/record-upload-2026-03-09T14-05-25-030Z.log"
+          }
+        ]
+      }
+    },
+    {
+      "id": "K-CRE-2",
+      "status": "pass",
+      "notes": "CRE simulate passed for data-aggregation",
+      "history": [
+        {
+          "ranAt": "2026-03-09T14:06:49.816Z",
+          "status": "skip",
+          "runner": "ctest"
+        },
+        {
+          "ranAt": "2026-03-09T13:34:18.320Z",
+          "status": "pass",
+          "runner": "ctest"
+        },
+        {
+          "ranAt": "2026-03-09T13:34:18.307Z",
+          "status": "skip",
+          "runner": "ctest"
+        },
+        {
+          "ranAt": "2026-03-09T13:33:03.906Z",
+          "status": "pass",
+          "runner": "ctest"
+        },
+        {
+          "ranAt": "2026-03-09T13:32:20.966Z",
+          "status": "fail",
+          "runner": "ctest"
+        }
+      ],
+      "lastRun": {
+        "ranAt": "2026-03-09T14:06:49.910Z",
+        "runner": "ctest",
+        "environment": {
+          "gitSha": "3dc905d"
+        },
+        "evidence": [
+          {
+            "type": "simulate-output",
+            "path": "docs/evidence/cre/data-aggregation-2026-03-09T14-06-49-910Z.log"
+          }
+        ]
+      }
+    },
+    {
+      "id": "K-CRE-3",
+      "status": "pass",
+      "notes": "CRE simulate passed for payment-mint",
+      "history": [
+        {
+          "ranAt": "2026-03-09T13:34:22.632Z",
+          "status": "pass",
+          "runner": "ctest"
+        },
+        {
+          "ranAt": "2026-03-09T13:33:17.218Z",
+          "status": "pass",
+          "runner": "ctest"
+        },
+        {
+          "ranAt": "2026-03-09T13:22:30.140Z",
+          "status": "pass",
+          "runner": "ctest"
+        },
+        {
+          "ranAt": "2026-03-09T13:19:48.918Z",
+          "status": "pass",
+          "runner": "ctest"
+        },
+        {
+          "ranAt": "2026-03-09T13:15:48.709Z",
+          "status": "fail",
+          "runner": "ctest"
+        }
+      ],
+      "lastRun": {
+        "ranAt": "2026-03-09T14:07:26.184Z",
+        "runner": "ctest",
+        "environment": {
+          "gitSha": "3dc905d"
+        },
+        "evidence": [
+          {
+            "type": "simulate-output",
+            "path": "docs/evidence/cre/payment-mint-2026-03-09T14-07-26-184Z.log"
+          }
+        ]
+      }
+    }
+  ]
+}

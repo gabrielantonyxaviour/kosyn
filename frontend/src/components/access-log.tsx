@@ -34,33 +34,28 @@ export function AccessLog({ patientAddress }: AccessLogProps) {
 
   if (logs.length === 0) {
     return (
-      <div>
-        <h2 className="text-sm font-medium text-muted-foreground mb-2">
+      <div className="flex flex-col h-full min-h-0">
+        <h2 className="text-sm font-medium text-muted-foreground mb-2 shrink-0">
           Access History
         </h2>
-        <div className="rounded-lg border border-border p-6 text-center">
-          <p className="text-sm text-muted-foreground">
-            No access logs yet. Logs will appear when doctors access your
-            records.
-          </p>
+        <div className="rounded-lg border border-border p-6 text-center flex-1 flex items-center justify-center">
+          <p className="text-sm text-muted-foreground">No access logs yet.</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div>
-      <h2 className="text-sm font-medium text-muted-foreground mb-2">
+    <div className="flex flex-col h-full min-h-0">
+      <h2 className="text-sm font-medium text-muted-foreground mb-2 shrink-0">
         Access History
       </h2>
-      <div className="rounded-lg border border-border">
+      <div className="rounded-lg border border-border overflow-auto flex-1">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Accessor</TableHead>
-              <TableHead>Action</TableHead>
               <TableHead>Time</TableHead>
-              <TableHead>Address</TableHead>
               <TableHead className="text-right">Verified</TableHead>
             </TableRow>
           </TableHeader>
@@ -75,26 +70,17 @@ export function AccessLog({ patientAddress }: AccessLogProps) {
                   }
                 }}
               >
-                <TableCell className="font-medium">
+                <TableCell className="font-medium text-xs">
                   {log.accessorName}
                 </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {log.action}
-                </TableCell>
-                <TableCell className="text-muted-foreground">
+                <TableCell className="text-muted-foreground text-xs">
                   {format(new Date(log.timestamp), "MMM d, h:mm a")}
-                </TableCell>
-                <TableCell>
-                  <code className="text-xs text-muted-foreground font-mono">
-                    {log.accessorAddress.slice(0, 6)}...
-                    {log.accessorAddress.slice(-4)}
-                  </code>
                 </TableCell>
                 <TableCell className="text-right">
                   {log.hasAttestation && (
                     <Badge
                       variant="outline"
-                      className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 gap-1"
+                      className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 gap-1 text-[10px]"
                     >
                       <ShieldCheck className="h-3 w-3" />
                       CRE

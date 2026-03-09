@@ -1,0 +1,7 @@
+{
+  "consultationId": "consultation-demo-001",
+  "doctorAddress": "0x000000000000000000000000000000000000dEaD",
+  "patientAddress": "0x000000000000000000000000000000000000bEEF",
+  "notesCid": "bafybeigdyrztodemo",
+  "encryptedTranscript": "dGVzdC1lbmNyeXB0ZWQtdHJhbnNjcmlwdA=="
+}

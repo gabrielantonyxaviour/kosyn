@@ -1,7 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { Shield, ShieldCheck } from "lucide-react";
+import { ShieldCheck, Shield, Copy, Check, ArrowUpRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 interface NillionProofBadgeProps {
   proof?: {
@@ -12,54 +20,119 @@ interface NillionProofBadgeProps {
 }
 
 export function NillionProofBadge({ proof }: NillionProofBadgeProps) {
-  const [expanded, setExpanded] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   if (!proof) return null;
 
-  const sigPreview = proof.signature.slice(0, 16) + "…";
   const modelShort = proof.model.split("/").pop() ?? proof.model;
 
-  return (
-    <div className="inline-block">
-      <button
-        onClick={() => setExpanded((v) => !v)}
-        className="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-xs text-emerald-400 hover:bg-emerald-500/20 transition-colors"
-      >
-        <ShieldCheck className="h-3 w-3" />
-        TEE Verified
-      </button>
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(proof.signature);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
-      {expanded && (
-        <div className="mt-1.5 rounded-lg border border-border bg-card p-3 text-xs space-y-1.5 min-w-[240px]">
-          <div className="flex items-center gap-1.5 text-emerald-400 font-medium">
-            <ShieldCheck className="h-3.5 w-3.5" />
-            Nillion nilAI — cryptographic proof
-          </div>
-          <div className="space-y-1 text-muted-foreground">
-            <div className="flex justify-between gap-4">
-              <span>Model</span>
-              <span className="text-foreground font-mono">{modelShort}</span>
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <button className="inline-flex items-center gap-1 text-emerald-400 hover:text-emerald-300 transition-colors">
+          <span className="text-[10px] font-medium">Verified</span>
+          <ArrowUpRight className="h-2.5 w-2.5" />
+        </button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-1.5">
+            <span className="text-sm font-semibold tracking-[0.15em] text-muted-foreground">
+              nillion
+            </span>
+            <span className="text-sm text-muted-foreground/70 font-normal">
+              nilAI Proof
+            </span>
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          {/* What is this */}
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            This response was generated inside an AMD SEV-SNP + NVIDIA
+            Confidential Computing TEE enclave. The cryptographic signature
+            below proves the response was produced by the attested model without
+            tampering.
+          </p>
+
+          {/* Proof details */}
+          <div className="rounded-lg border border-border bg-muted/50 p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">Model</span>
+              <span className="text-xs font-mono text-foreground">
+                {modelShort}
+              </span>
             </div>
-            <div className="flex justify-between gap-4">
-              <span>Signature</span>
-              <span className="text-foreground font-mono">{sigPreview}</span>
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">Enclave</span>
+              <span className="text-xs font-mono text-foreground">
+                AMD SEV-SNP + NVIDIA CC
+              </span>
             </div>
             {proof.timestamp && (
-              <div className="flex justify-between gap-4">
-                <span>Generated</span>
-                <span className="text-foreground">
-                  {new Date(proof.timestamp).toLocaleTimeString()}
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">Timestamp</span>
+                <span className="text-xs font-mono text-foreground">
+                  {new Date(proof.timestamp).toLocaleString()}
                 </span>
               </div>
             )}
+            <div className="space-y-1.5">
+              <span className="text-xs text-muted-foreground">
+                ECDSA Signature (secp256k1)
+              </span>
+              <div className="flex items-start gap-2">
+                <code className="flex-1 text-[10px] font-mono text-foreground bg-background rounded px-2 py-1.5 break-all leading-relaxed border border-border">
+                  {proof.signature}
+                </code>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 shrink-0"
+                  onClick={handleCopy}
+                >
+                  {copied ? (
+                    <Check className="h-3 w-3 text-emerald-400" />
+                  ) : (
+                    <Copy className="h-3 w-3" />
+                  )}
+                </Button>
+              </div>
+            </div>
           </div>
-          <p className="text-muted-foreground/70 text-[10px] leading-relaxed pt-0.5">
-            Response signed by AMD SEV-SNP + NVIDIA CC enclave. Verify via
-            /v1/attestation/report.
-          </p>
+
+          {/* Verification steps */}
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-muted-foreground">
+              How to verify
+            </p>
+            <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
+              <li>
+                Fetch the enclave public key via{" "}
+                <code className="text-[10px] font-mono bg-muted px-1 rounded">
+                  GET /v1/public_key
+                </code>
+              </li>
+              <li>
+                Fetch the TEE attestation report via{" "}
+                <code className="text-[10px] font-mono bg-muted px-1 rounded">
+                  GET /v1/attestation/report
+                </code>
+              </li>
+              <li>
+                Verify the ECDSA signature against the response content using
+                the public key
+              </li>
+            </ol>
+          </div>
         </div>
-      )}
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 

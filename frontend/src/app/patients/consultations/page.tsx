@@ -21,9 +21,11 @@ import {
   Smile,
   Activity,
   ArrowLeft,
-  MapPin,
   Search,
+  Globe,
 } from "lucide-react";
+import { getCountryByCode, buildJurisdiction } from "@/lib/locations";
+import { LocationCombobox } from "@/components/location-combobox";
 import { useActiveAccount } from "thirdweb/react";
 import { useRouter } from "next/navigation";
 import { createBooking } from "@/lib/demo-api";
@@ -80,12 +82,23 @@ export default function BookPage() {
   const router = useRouter();
   const [step, setStep] = useState<Step>("query");
   const [query, setQuery] = useState<string | null>(null);
-  const [location, setLocation] = useState("");
+  const [selectedCountry, setSelectedCountry] = useState("");
+  const [selectedRegion, setSelectedRegion] = useState("");
   const [querySearch, setQuerySearch] = useState("");
   const [doctor, setDoctor] = useState<Doctor | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [selectedTime, setSelectedTime] = useState<string | undefined>();
   const [showConfirm, setShowConfirm] = useState(false);
+
+  const location =
+    selectedCountry && selectedRegion
+      ? buildJurisdiction(selectedCountry, selectedRegion)
+      : selectedCountry || "";
+
+  const handleCountryChange = (code: string) => {
+    setSelectedCountry(code);
+    setSelectedRegion("");
+  };
 
   const handleQueryContinue = () => {
     if (query) setStep("doctor");
@@ -253,28 +266,29 @@ export default function BookPage() {
             </table>
           </div>
 
-          <div className="flex items-end gap-3">
-            <div className="flex-1">
-              <label className="text-sm font-medium mb-1.5 block">
-                <MapPin className="h-3.5 w-3.5 inline mr-1" />
-                Location (optional)
-              </label>
-              <input
-                type="text"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                placeholder="e.g. CA, NY, TX"
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-              />
+          <div className="space-y-3">
+            <label className="text-sm font-medium block">
+              <Globe className="h-3.5 w-3.5 inline mr-1" />
+              Location (optional)
+            </label>
+            <div className="flex items-end gap-3">
+              <div className="flex-1">
+                <LocationCombobox
+                  selectedCountry={selectedCountry}
+                  selectedRegion={selectedRegion}
+                  onCountryChange={handleCountryChange}
+                  onRegionChange={setSelectedRegion}
+                />
+              </div>
+              <Button
+                onClick={handleQueryContinue}
+                disabled={!query}
+                className="px-6 shrink-0"
+              >
+                Find Doctors
+                <Activity className="h-4 w-4 ml-1" />
+              </Button>
             </div>
-            <Button
-              onClick={handleQueryContinue}
-              disabled={!query}
-              className="px-6"
-            >
-              Find Doctors
-              <Activity className="h-4 w-4 ml-1" />
-            </Button>
           </div>
         </div>
       )}
@@ -293,7 +307,13 @@ export default function BookPage() {
               <h2 className="text-lg font-semibold">Choose a Doctor</h2>
               <p className="text-sm text-muted-foreground">
                 {healthQueries.find((q) => q.id === query)?.label} doctors
-                {location ? ` in ${location.toUpperCase()}` : ""}
+                {selectedCountry
+                  ? ` in ${
+                      selectedRegion
+                        ? `${getCountryByCode(selectedCountry)?.regions.find((r) => r.code === selectedRegion)?.name}, `
+                        : ""
+                    }${getCountryByCode(selectedCountry)?.name}`
+                  : ""}
               </p>
             </div>
           </div>

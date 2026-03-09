@@ -1,0 +1,18 @@
+workflow=consultation-processing
+command=cre workflow simulate consultation-processing --http-payload '<json>'
+status=1
+
+stdout:
+✓ Workflow compiled
+2026-03-09T18:49:23Z [SIMULATION] Simulator Initialized
+
+2026-03-09T18:49:23Z [SIMULATION] Running trigger trigger=http-trigger@1.0.0-alpha
+Missing required fields: patientAddress=true, encryptedTranscript=false, consultationId=true
+
+
+stderr:
+Initializing...
+Loading settings...
+Checking RPC connectivity...
+Compiling workflow...
+✗ Workflow execution failed:

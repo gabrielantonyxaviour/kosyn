@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "workflows": [
+    {
+      "workflow": "record-upload",
+      "section": "cre-simulate",
+      "specIds": ["K-CRE-1"],
+      "fixture": "docs/fixtures/workflows/record-upload.json"
+    },
+    {
+      "workflow": "consultation-processing",
+      "section": "cre-simulate",
+      "specIds": ["K-CRE-2"],
+      "fixture": "docs/fixtures/workflows/consultation-processing.json",
+      "skip": true,
+      "skipReason": "Requires real ECDH-encrypted transcript matching CRE TEE private key; cannot simulate with fixture data"
+    },
+    {
+      "workflow": "data-aggregation",
+      "section": "cre-simulate",
+      "specIds": ["K-CRE-2"],
+      "fixture": "docs/fixtures/workflows/data-aggregation.json"
+    },
+    {
+      "workflow": "payment-mint",
+      "section": "cre-simulate",
+      "specIds": ["K-CRE-3"],
+      "fixture": "docs/fixtures/workflows/payment-mint.json"
+    }
+  ]
+}

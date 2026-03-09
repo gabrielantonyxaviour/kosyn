@@ -13,6 +13,8 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { CreFeed } from "@/components/cre-feed";
+import { buildJurisdiction } from "@/lib/locations";
+import { LocationCombobox } from "@/components/location-combobox";
 import {
   Upload,
   ShieldCheck,
@@ -74,10 +76,11 @@ export function ProviderRegister() {
   const [form, setForm] = useState({
     name: "",
     specialty: "",
-    jurisdiction: "",
     licenseNumber: "",
     fee: "",
   });
+  const [jurCountry, setJurCountry] = useState("");
+  const [jurRegion, setJurRegion] = useState("");
   const [certificate, setCertificate] = useState<File | null>(null);
   const [certCid, setCertCid] = useState<string | null>(null);
   const [licenseHash, setLicenseHash] = useState<string | null>(null);
@@ -115,7 +118,8 @@ export function ProviderRegister() {
   const step1Valid =
     form.name.trim() !== "" &&
     form.specialty !== "" &&
-    form.jurisdiction.trim() !== "" &&
+    jurCountry !== "" &&
+    jurRegion !== "" &&
     form.licenseNumber.trim() !== "" &&
     form.fee.trim() !== "";
 
@@ -197,7 +201,7 @@ export function ProviderRegister() {
         JSON.stringify({
           name: form.name,
           specialty: form.specialty,
-          jurisdiction: form.jurisdiction,
+          jurisdiction: buildJurisdiction(jurCountry, jurRegion),
           licenseHash: hash,
           certCid: uploadedCid,
           txHash: returnedTx,
@@ -297,29 +301,28 @@ export function ProviderRegister() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="jurisdiction">Jurisdiction</Label>
-                <Input
-                  id="jurisdiction"
-                  value={form.jurisdiction}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, jurisdiction: e.target.value }))
-                  }
-                  placeholder="US-CA"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="license">License Number</Label>
-                <Input
-                  id="license"
-                  value={form.licenseNumber}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, licenseNumber: e.target.value }))
-                  }
-                  placeholder="A-123456"
-                />
-              </div>
+            <div className="space-y-2">
+              <Label>Jurisdiction</Label>
+              <LocationCombobox
+                selectedCountry={jurCountry}
+                selectedRegion={jurRegion}
+                onCountryChange={(code) => {
+                  setJurCountry(code);
+                  setJurRegion("");
+                }}
+                onRegionChange={setJurRegion}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="license">License Number</Label>
+              <Input
+                id="license"
+                value={form.licenseNumber}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, licenseNumber: e.target.value }))
+                }
+                placeholder="A-123456"
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="fee">Consultation Fee (KUSD)</Label>
@@ -457,7 +460,21 @@ export function ProviderRegister() {
               </div>
             )}
 
-            {stageError && <p className="text-xs text-red-400">{stageError}</p>}
+            {stageError && (
+              <div className="space-y-1">
+                <p className="text-xs text-red-400">{stageError}</p>
+                <p className="text-xs text-muted-foreground">
+                  The CRE service may be offline. Contact{" "}
+                  <a
+                    href="mailto:gabrielantony56@gmail.com"
+                    className="underline text-primary hover:text-primary/80"
+                  >
+                    gabrielantony56@gmail.com
+                  </a>{" "}
+                  to have it turned back on.
+                </p>
+              </div>
+            )}
           </div>
 
           {stage === "passkey-register" && (

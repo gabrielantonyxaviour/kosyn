@@ -254,18 +254,23 @@ export default function DoctorConsultationPage() {
 
     if (!result.success) {
       setCreActive(false);
-      setCreError(result.error ?? "CRE workflow failed");
+      setCreError(
+        result.error ??
+          "The CRE service is currently offline. Please reach out to gabrielantony56@gmail.com to have it turned back on.",
+      );
       setPhase("error");
-      toast.error("Consultation processing failed.");
+      toast.error("CRE service is offline — consultation processing failed.");
       return;
     }
 
     const ipfsCid = result.data?.ipfsCid as string | undefined;
     if (!ipfsCid) {
       setCreActive(false);
-      setCreError("CRE workflow returned no IPFS CID");
+      setCreError(
+        "The CRE service returned no results. It may be offline. Please reach out to gabrielantony56@gmail.com to have it turned back on.",
+      );
       setPhase("error");
-      toast.error("No IPFS CID returned from CRE.");
+      toast.error("CRE service returned no results.");
       return;
     }
 
@@ -287,10 +292,12 @@ export default function DoctorConsultationPage() {
     } catch (e) {
       setCreActive(false);
       setCreError(
-        e instanceof Error ? e.message : "Failed to fetch results from IPFS",
+        e instanceof Error
+          ? e.message
+          : "Failed to fetch results. The CRE service may be offline. Please reach out to gabrielantony56@gmail.com to have it turned back on.",
       );
       setPhase("error");
-      toast.error("Failed to fetch consultation results from IPFS.");
+      toast.error("Failed to fetch consultation results.");
       return;
     }
 
@@ -610,9 +617,19 @@ export default function DoctorConsultationPage() {
                 <FileText className="h-6 w-6 text-red-400" />
               </div>
               <p className="text-sm font-medium text-red-400">
-                Consultation Processing Failed
+                CRE Service Offline
               </p>
               <p className="text-xs text-muted-foreground">{creError}</p>
+              <p className="text-xs text-muted-foreground">
+                Contact{" "}
+                <a
+                  href="mailto:gabrielantony56@gmail.com"
+                  className="underline text-primary hover:text-primary/80"
+                >
+                  gabrielantony56@gmail.com
+                </a>{" "}
+                to have it turned back on.
+              </p>
               <Button
                 variant="outline"
                 onClick={() => {

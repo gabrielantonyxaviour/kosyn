@@ -1,0 +1,15 @@
+workflow=data-aggregation
+command=cre workflow simulate data-aggregation --http-payload '<json>'
+status=1
+
+stdout:
+✓ Workflow compiled
+
+
+
+stderr:
+Initializing...
+Loading settings...
+Checking RPC connectivity...
+Compiling workflow...
+✗ Failed to get HTTP trigger payload: HTTP trigger input cancelled: huh: could not open a new TTY: open /dev/tty: device not configured

@@ -9,6 +9,11 @@ export type TranscriptCallback = (event: TranscriptEvent) => void;
 
 let socket: WebSocket | null = null;
 let mediaRecorder: MediaRecorder | null = null;
+let activeStream: MediaStream | null = null;
+
+export function getActiveStream(): MediaStream | null {
+  return activeStream;
+}
 
 export async function getToken(): Promise<string> {
   const res = await fetch("/api/assemblyai/token", { method: "POST" });
@@ -49,6 +54,7 @@ export async function startTranscription(
   });
 
   const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  activeStream = stream;
   mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
 
   mediaRecorder.ondataavailable = (e) => {
@@ -67,6 +73,7 @@ export function stopTranscription(): void {
     mediaRecorder.stop();
     mediaRecorder.stream.getTracks().forEach((t) => t.stop());
     mediaRecorder = null;
+    activeStream = null;
   }
   if (socket) {
     socket.close();

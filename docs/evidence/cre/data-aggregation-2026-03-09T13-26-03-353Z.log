@@ -1,0 +1,21 @@
+workflow=data-aggregation
+command=cre workflow simulate data-aggregation --http-payload '<json>'
+status=1
+
+stdout:
+✓ Workflow compiled
+2026-03-09T18:56:16Z [SIMULATION] Simulator Initialized
+
+2026-03-09T18:56:16Z [SIMULATION] Running trigger trigger=http-trigger@1.0.0-alpha
+2026-03-09T18:56:17Z [USER LOG] data-aggregation: endpoint=demographics queryId=1
+not a function
+
+
+stderr:
+Initializing...
+Loading settings...
+Checking RPC connectivity...
+Compiling workflow...
+time=2026-03-09T18:56:17.990+05:30 level=INFO msg="context canceled"
+time=2026-03-09T18:56:17.999+05:30 level=INFO msg="context canceled"
+✗ Workflow execution failed:

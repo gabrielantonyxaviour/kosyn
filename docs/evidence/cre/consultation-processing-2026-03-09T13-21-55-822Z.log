@@ -1,0 +1,19 @@
+workflow=consultation-processing
+command=cre workflow simulate consultation-processing --http-payload '<json>'
+status=1
+
+stdout:
+✓ Workflow compiled
+2026-03-09T18:52:17Z [SIMULATION] Simulator Initialized
+
+2026-03-09T18:52:17Z [SIMULATION] Running trigger trigger=http-trigger@1.0.0-alpha
+2026-03-09T18:52:20Z [USER LOG] Processing consultation consultation-demo-001 for patient: 0x000000000000000000000000000000000000bEEF
+unexpected token: 'test'
+
+
+stderr:
+Initializing...
+Loading settings...
+Checking RPC connectivity...
+Compiling workflow...
+✗ Workflow execution failed:

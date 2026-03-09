@@ -69,74 +69,76 @@ export default function DashboardPage() {
         </p>
       </div>
 
-      {/* Kosyn AI */}
-      {address && <PatientAiChat patientAddress={address} />}
-
       {/* Consent manager */}
       {address && <ConsentManager patientAddress={address} />}
 
-      {/* Consultations table */}
-      <div>
-        <h2 className="text-sm font-medium text-muted-foreground mb-2">
-          Consultations
-        </h2>
-        {!bookings || bookings.length === 0 ? (
-          <div className="rounded-lg border border-border p-6 text-center">
-            <p className="text-sm text-muted-foreground">
-              No consultations yet. Book a doctor to get started.
-            </p>
-          </div>
-        ) : (
-          <div className="rounded-lg border border-border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Doctor</TableHead>
-                  <TableHead>Specialty</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Time</TableHead>
-                  <TableHead className="text-right">Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {bookings.map((b) => (
-                  <TableRow
-                    key={b.id}
-                    className="cursor-pointer hover:bg-muted/50"
-                    onClick={() =>
-                      router.push(`/patients/consultation/${b.consultationId}`)
-                    }
-                  >
-                    <TableCell className="font-medium">
-                      {b.doctorName}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {b.specialty}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {b.date}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {b.time}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Badge
-                        variant="outline"
-                        className={statusColors[b.status] || ""}
-                      >
-                        {b.status}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-      </div>
+      {/* Chat + Consultations/Access grid */}
+      <div className="grid grid-cols-[65%_1fr] gap-4 h-[680px]">
+        {/* Kosyn AI chat — left */}
+        {address && <PatientAiChat patientAddress={address} />}
 
-      {/* Access log */}
-      {address && <AccessLog patientAddress={address} />}
+        {/* Consultations + Access History — right, stacked */}
+        <div className="flex flex-col gap-4 min-h-0">
+          {/* Consultations */}
+          <div className="flex flex-col min-h-0 flex-1">
+            <h2 className="text-sm font-medium text-muted-foreground mb-2 shrink-0">
+              Consultations
+            </h2>
+            {!bookings || bookings.length === 0 ? (
+              <div className="rounded-lg border border-border p-6 text-center flex-1 flex items-center justify-center">
+                <p className="text-sm text-muted-foreground">
+                  No consultations yet.
+                </p>
+              </div>
+            ) : (
+              <div className="rounded-lg border border-border overflow-auto flex-1">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Doctor</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead className="text-right">Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {bookings.map((b) => (
+                      <TableRow
+                        key={b.id}
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() =>
+                          router.push(
+                            `/patients/consultation/${b.consultationId}`,
+                          )
+                        }
+                      >
+                        <TableCell className="font-medium text-xs">
+                          {b.doctorName}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground text-xs">
+                          {b.date}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Badge
+                            variant="outline"
+                            className={`text-[10px] ${statusColors[b.status] || ""}`}
+                          >
+                            {b.status}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </div>
+
+          {/* Access History */}
+          <div className="flex flex-col min-h-0 flex-1">
+            {address && <AccessLog patientAddress={address} />}
+          </div>
+        </div>
+      </div>
     </main>
   );
 }

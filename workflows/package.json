@@ -2,6 +2,9 @@
   "name": "kosyn-workflows",
   "private": true,
   "type": "module",
+  "scripts": {
+    "test:cre": "node scripts/run-ctest.mjs"
+  },
   "dependencies": {
     "@chainlink/cre-sdk": "latest",
     "@noble/ciphers": "^2.1.1",

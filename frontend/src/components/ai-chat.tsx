@@ -7,6 +7,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Send } from "lucide-react";
 import Image from "next/image";
 import { NillionProofBadge } from "@/components/nillion-proof-badge";
+import { useActiveAccount } from "thirdweb/react";
 import type { DemoRecord } from "@/app/api/demo/store";
 
 interface Message {
@@ -20,6 +21,7 @@ interface AiChatProps {
 }
 
 export function AiChat({ contextRecords = [] }: AiChatProps) {
+  const account = useActiveAccount();
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
@@ -162,29 +164,49 @@ export function AiChat({ contextRecords = [] }: AiChatProps) {
       <div className="flex flex-col flex-1 gap-3 px-4 pb-4">
         <ScrollArea className="flex-1 min-h-0" ref={scrollRef}>
           <div className="space-y-3 pr-4">
-            {messages.map((msg, i) => (
-              <div
-                key={i}
-                className={`flex ${msg.role === "user" ? "justify-end" : ""}`}
-              >
-                {msg.role === "assistant" ? (
-                  <div className="rounded-lg px-3 py-2 text-sm max-w-[85%] bg-muted space-y-1.5">
-                    <div>
-                      {msg.content || (
-                        <span className="animate-pulse text-muted-foreground">
-                          Thinking...
-                        </span>
-                      )}
+            {messages.map((msg, i) => {
+              const isUser = msg.role === "user";
+              return (
+                <div
+                  key={i}
+                  className={`flex items-start gap-2 ${isUser ? "flex-row-reverse" : ""}`}
+                >
+                  {isUser ? (
+                    <div className="flex-shrink-0 w-7 h-7 rounded-full overflow-hidden mt-1">
+                      <img
+                        src={`https://api.dicebear.com/9.x/shapes/svg?seed=${account?.address ?? "default"}`}
+                        alt="You"
+                        className="w-full h-full"
+                      />
                     </div>
-                    {msg.proof && <NillionProofBadge proof={msg.proof} />}
-                  </div>
-                ) : (
-                  <p className="text-sm max-w-[85%] text-foreground px-1 py-1">
-                    {msg.content}
-                  </p>
-                )}
-              </div>
-            ))}
+                  ) : (
+                    <div className="flex-shrink-0 w-7 h-7 rounded-full overflow-hidden mt-1">
+                      <Image
+                        src="/kosyn-no-bg.png"
+                        alt="KosynGPT"
+                        width={28}
+                        height={28}
+                        className="w-full h-full object-cover invert dark:invert-0"
+                      />
+                    </div>
+                  )}
+                  {isUser ? (
+                    <div className="rounded-lg rounded-br-sm px-3 py-2 text-sm max-w-[70%] bg-primary text-primary-foreground">
+                      {msg.content}
+                    </div>
+                  ) : (
+                    <div className="rounded-lg rounded-bl-sm px-3 py-2 text-sm max-w-[70%] bg-muted text-foreground border border-border space-y-1.5">
+                      <div>
+                        {msg.content || (
+                          <span className="inline-block w-1.5 h-4 bg-primary/70 animate-pulse" />
+                        )}
+                      </div>
+                      {msg.proof && <NillionProofBadge proof={msg.proof} />}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </ScrollArea>
 

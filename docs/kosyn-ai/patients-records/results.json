@@ -1,0 +1,64 @@
+{
+  "app": "kosyn-ai",
+  "section": "patients-records",
+  "lastRun": "2026-03-09T14:15:13.442Z",
+  "runner": "btest",
+  "results": [
+    {
+      "id": "K-PR-1",
+      "status": "pass",
+      "notes": "All Playwright tests in patient-records.spec.ts passed",
+      "lastRun": {
+        "ranAt": "2026-03-09T14:15:13.442Z",
+        "runner": "btest",
+        "environment": {
+          "gitSha": "3dc905d"
+        },
+        "evidence": [
+          {
+            "type": "report",
+            "path": "frontend/e2e/results/report.json"
+          }
+        ]
+      },
+      "history": [
+        {
+          "ranAt": "2026-03-09T13:37:26.810Z",
+          "status": "pass",
+          "runner": "btest"
+        },
+        {
+          "ranAt": "2026-03-09T13:37:11.498Z",
+          "status": "skip",
+          "runner": "btest"
+        }
+      ]
+    },
+    {
+      "id": "K-PR-2",
+      "status": "skip",
+      "notes": "No Playwright spec covers this test yet",
+      "lastRun": {
+        "ranAt": "2026-03-09T13:37:11.498Z",
+        "runner": "btest",
+        "environment": {
+          "gitSha": "3dc905d"
+        },
+        "evidence": []
+      }
+    },
+    {
+      "id": "K-PR-3",
+      "status": "skip",
+      "notes": "No Playwright spec covers this test yet",
+      "lastRun": {
+        "ranAt": "2026-03-09T13:37:11.498Z",
+        "runner": "btest",
+        "environment": {
+          "gitSha": "3dc905d"
+        },
+        "evidence": []
+      }
+    }
+  ]
+}

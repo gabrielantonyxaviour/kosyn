@@ -6,34 +6,18 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { SelectItem } from "@/components/ui/select";
 import { F, DateField, Sel, type SubmitFn } from "./forms";
+import {
+  pickRandom,
+  visionPresets,
+  dentalPresets,
+  physicalTherapyPresets,
+  nutritionPresets,
+} from "./presets";
 
 // ─── VisionExamForm ────────────────────────────────────────────────────────────
 
 export function VisionExamForm({ onSubmit }: { onSubmit: SubmitFn }) {
-  const [f, setF] = useState<Record<string, string>>({
-    examDate: "",
-    examType: "",
-    examiner: "",
-    vaOdUncorrected: "",
-    vaOsUncorrected: "",
-    vaOdCorrected: "",
-    vaOsCorrected: "",
-    sphereOd: "",
-    sphereOs: "",
-    cylinderOd: "",
-    cylinderOs: "",
-    axisOd: "",
-    axisOs: "",
-    addPower: "",
-    pd: "",
-    iopOd: "",
-    iopOs: "",
-    anteriorSegment: "",
-    posteriorSegment: "",
-    diagnosis: "",
-    plan: "",
-    notes: "",
-  });
+  const [f, setF] = useState<Record<string, string>>(pickRandom(visionPresets));
 
   const set = (k: string) => (v: string) => setF((p) => ({ ...p, [k]: v }));
   const inp =
@@ -213,23 +197,7 @@ export function VisionExamForm({ onSubmit }: { onSubmit: SubmitFn }) {
 // ─── DentalRecordForm ──────────────────────────────────────────────────────────
 
 export function DentalRecordForm({ onSubmit }: { onSubmit: SubmitFn }) {
-  const [f, setF] = useState<Record<string, string>>({
-    visitDate: "",
-    visitType: "",
-    dentist: "",
-    facility: "",
-    toothNumbers: "",
-    cdtCode: "",
-    procedureDescription: "",
-    periodontalStatus: "",
-    xrayFindings: "",
-    anesthesia: "",
-    materialsUsed: "",
-    oralHygieneStatus: "",
-    treatmentPlan: "",
-    nextAppointment: "",
-    notes: "",
-  });
+  const [f, setF] = useState<Record<string, string>>(pickRandom(dentalPresets));
 
   const set = (k: string) => (v: string) => setF((p) => ({ ...p, [k]: v }));
   const inp =
@@ -379,26 +347,9 @@ export function DentalRecordForm({ onSubmit }: { onSubmit: SubmitFn }) {
 // ─── PhysicalTherapyForm ───────────────────────────────────────────────────────
 
 export function PhysicalTherapyForm({ onSubmit }: { onSubmit: SubmitFn }) {
-  const [f, setF] = useState<Record<string, string>>({
-    sessionDate: "",
-    sessionNumber: "",
-    therapist: "",
-    referringPhysician: "",
-    diagnosis: "",
-    icd10Code: "",
-    chiefComplaint: "",
-    painLevel: "",
-    functionalStatus: "",
-    romMeasurements: "",
-    strengthTesting: "",
-    interventions: "",
-    exercisePlan: "",
-    modalities: "",
-    progressNotes: "",
-    goalsUpdate: "",
-    planNextSession: "",
-    notes: "",
-  });
+  const [f, setF] = useState<Record<string, string>>(
+    pickRandom(physicalTherapyPresets),
+  );
 
   const set = (k: string) => (v: string) => setF((p) => ({ ...p, [k]: v }));
   const inp =
@@ -564,28 +515,9 @@ export function PhysicalTherapyForm({ onSubmit }: { onSubmit: SubmitFn }) {
 // ─── NutritionAssessmentForm ───────────────────────────────────────────────────
 
 export function NutritionAssessmentForm({ onSubmit }: { onSubmit: SubmitFn }) {
-  const [f, setF] = useState<Record<string, string>>({
-    assessmentDate: "",
-    dietitian: "",
-    referralReason: "",
-    height: "",
-    weight: "",
-    bmi: "",
-    waist: "",
-    bodyFat: "",
-    nutritionalStatus: "",
-    screeningTool: "",
-    screeningScore: "",
-    dietaryHistory: "",
-    foodAllergies: "",
-    supplements: "",
-    labValues: "",
-    diagnosis: "",
-    goals: "",
-    carePlan: "",
-    followUp: "",
-    notes: "",
-  });
+  const [f, setF] = useState<Record<string, string>>(
+    pickRandom(nutritionPresets),
+  );
 
   const set = (k: string) => (v: string) => setF((p) => ({ ...p, [k]: v }));
   const inp =

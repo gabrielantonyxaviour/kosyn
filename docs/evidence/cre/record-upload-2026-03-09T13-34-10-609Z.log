@@ -1,0 +1,31 @@
+workflow=record-upload
+command=cre workflow simulate record-upload --http-payload '<json>'
+status=0
+
+stdout:
+✓ Workflow compiled
+2026-03-09T19:04:14Z [SIMULATION] Simulator Initialized
+
+2026-03-09T19:04:14Z [SIMULATION] Running trigger trigger=http-trigger@1.0.0-alpha
+2026-03-09T19:04:14Z [USER LOG] Processing record upload for patient: 0x000000000000000000000000000000000000bEEF, type: 1
+2026-03-09T19:04:17Z [USER LOG] Uploaded to IPFS: Qmf7xTgR66iD5foyomL9wdVMcBr7vmSi6vbaNMjE3fWkao
+2026-03-09T19:04:18Z [USER LOG] Record uploaded on-chain. TX: unknown
+
+✓ Workflow Simulation Result:
+{}
+
+2026-03-09T19:04:18Z [SIMULATION] Execution finished signal received
+2026-03-09T19:04:18Z [SIMULATION] Skipping WorkflowEngineV2
+
+╭──────────────────────────────────────────────────────╮
+│ Simulation complete! Ready to deploy your workflow?  │
+│                                                      │
+│ Run cre account access to request deployment access. │
+╰──────────────────────────────────────────────────────╯
+
+
+stderr:
+Initializing...
+Loading settings...
+Checking RPC connectivity...
+Compiling workflow...

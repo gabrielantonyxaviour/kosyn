@@ -1,0 +1,68 @@
+{
+  "app": "kosyn-ai",
+  "section": "contracts-core",
+  "lastRun": "2026-03-09T14:07:40.480Z",
+  "runner": "contract",
+  "results": [
+    {
+      "id": "K-CON-1",
+      "status": "pass",
+      "notes": "forge suite passed: HealthRecordRegistry.t.sol",
+      "history": [
+        {
+          "ranAt": "2026-03-09T13:35:42.952Z",
+          "status": "pass",
+          "runner": "contract"
+        },
+        {
+          "ranAt": "2026-03-09T13:15:28.734Z",
+          "status": "pass",
+          "runner": "contract"
+        }
+      ],
+      "lastRun": {
+        "ranAt": "2026-03-09T14:07:40.480Z",
+        "runner": "contract",
+        "environment": {
+          "gitSha": "3dc905d"
+        },
+        "evidence": [
+          {
+            "type": "forge-output",
+            "path": "docs/evidence/contracts/forge-2026-03-09T14-07-40-480Z.json"
+          }
+        ]
+      }
+    },
+    {
+      "id": "K-CON-2",
+      "status": "pass",
+      "notes": "forge suite passed: HealthRecordRegistry.t.sol",
+      "history": [
+        {
+          "ranAt": "2026-03-09T13:35:42.952Z",
+          "status": "pass",
+          "runner": "contract"
+        },
+        {
+          "ranAt": "2026-03-09T13:15:28.734Z",
+          "status": "pass",
+          "runner": "contract"
+        }
+      ],
+      "lastRun": {
+        "ranAt": "2026-03-09T14:07:40.480Z",
+        "runner": "contract",
+        "environment": {
+          "gitSha": "3dc905d"
+        },
+        "evidence": [
+          {
+            "type": "forge-output",
+            "path": "docs/evidence/contracts/forge-2026-03-09T14-07-40-480Z.json"
+          }
+        ]
+      }
+    }
+  ]
+}

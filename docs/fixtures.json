@@ -1,0 +1,41 @@
+{
+  "app": "kosyn-ai",
+  "frontend": {
+    "baseUrl": "http://localhost:3000",
+    "authStrategy": "wallet-or-demo-session",
+    "roles": ["admin", "doctor", "patient", "operator"]
+  },
+  "api": {
+    "healthEndpoint": "/api/demo",
+    "deterministicHeaders": {
+      "x-test-mode": "deterministic"
+    }
+  },
+  "workflows": {
+    "packagePath": "workflows",
+    "simulateCommand": "cre workflow simulate",
+    "entries": {
+      "record-upload": {
+        "payloadFixture": "docs/fixtures/workflows/record-upload.json"
+      },
+      "consultation-processing": {
+        "payloadFixture": "docs/fixtures/workflows/consultation-processing.json"
+      },
+      "data-aggregation": {
+        "payloadFixture": "docs/fixtures/workflows/data-aggregation.json"
+      },
+      "payment-mint": {
+        "payloadFixture": "docs/fixtures/workflows/payment-mint.json"
+      }
+    }
+  },
+  "contracts": {
+    "packagePath": "contracts",
+    "testCommand": "forge test --json"
+  },
+  "seedData": {
+    "patientRecordId": "patient-record-demo-001",
+    "doctorWallet": "0x000000000000000000000000000000000000dEaD",
+    "patientWallet": "0x000000000000000000000000000000000000bEEF"
+  }
+}

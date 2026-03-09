@@ -5,8 +5,12 @@ export interface AiSessionData {
   createdAt: number;
 }
 
-// Module-level session store — persists across requests in dev server
-export const sessions = new Map<string, AiSessionData>();
+// Use globalThis so the Map survives HMR / module re-evaluation in dev
+const g = globalThis as unknown as {
+  __aiSessions?: Map<string, AiSessionData>;
+};
+if (!g.__aiSessions) g.__aiSessions = new Map();
+export const sessions = g.__aiSessions;
 
 export function cleanExpiredSessions() {
   const now = Date.now();

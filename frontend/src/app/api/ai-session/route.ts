@@ -15,9 +15,9 @@ export async function POST(req: NextRequest) {
       { status: 400 },
     );
   }
-  if (![15, 60, 240].includes(expiresInMinutes ?? 0)) {
+  if (![15, 30, 60, 240].includes(expiresInMinutes ?? 0)) {
     return NextResponse.json(
-      { error: "Invalid session duration. Must be 15, 60, or 240." },
+      { error: "Invalid session duration. Must be 15, 30, 60, or 240." },
       { status: 400 },
     );
   }

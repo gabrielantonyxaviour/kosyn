@@ -32,7 +32,7 @@ export async function POST(
     if (!triggerUrl) {
       return NextResponse.json(
         {
-          error: `CRE workflow '${parsed.data}' not configured. Start the CRE bridge (bun scripts/cre-bridge.ts) and set ${`CRE_${parsed.data.toUpperCase().replace(/-/g, "_")}_URL`} in .env.local.`,
+          error: `The CRE service is currently offline. Please reach out to gabrielantony56@gmail.com to have it turned back on.`,
           code: "CRE_NOT_CONFIGURED",
         },
         { status: 503 },

@@ -6,24 +6,16 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { SelectItem } from "@/components/ui/select";
 import { F, DateField, Sel, type SubmitFn } from "./forms";
+import {
+  pickRandom,
+  imagingPresets,
+  pathologyPresets,
+  geneticPresets,
+} from "./presets";
 
 // ─── 1. ImagingReportForm ─────────────────────────────────────────────────────
 export function ImagingReportForm({ onSubmit }: { onSubmit: SubmitFn }) {
-  const [f, setF] = useState({
-    examDate: "",
-    modality: "",
-    bodyPart: "",
-    indication: "",
-    contrastUsed: "",
-    radiologist: "",
-    facility: "",
-    accessionNumber: "",
-    findings: "",
-    impression: "",
-    comparison: "",
-    recommendations: "",
-    notes: "",
-  });
+  const [f, setF] = useState(pickRandom(imagingPresets));
 
   const set = (k: keyof typeof f) => (v: string) =>
     setF((p) => ({ ...p, [k]: v }));
@@ -172,22 +164,7 @@ export function ImagingReportForm({ onSubmit }: { onSubmit: SubmitFn }) {
 
 // ─── 2. PathologyReportForm ───────────────────────────────────────────────────
 export function PathologyReportForm({ onSubmit }: { onSubmit: SubmitFn }) {
-  const [f, setF] = useState({
-    specimenDate: "",
-    reportDate: "",
-    specimenType: "",
-    specimenSite: "",
-    clinicalHistory: "",
-    pathologist: "",
-    grossDescription: "",
-    microscopicFindings: "",
-    diagnosis: "",
-    grade: "",
-    margins: "",
-    stage: "",
-    specialStains: "",
-    notes: "",
-  });
+  const [f, setF] = useState(pickRandom(pathologyPresets));
 
   const set = (k: keyof typeof f) => (v: string) =>
     setF((p) => ({ ...p, [k]: v }));
@@ -339,22 +316,7 @@ export function PathologyReportForm({ onSubmit }: { onSubmit: SubmitFn }) {
 
 // ─── 3. GeneticReportForm ─────────────────────────────────────────────────────
 export function GeneticReportForm({ onSubmit }: { onSubmit: SubmitFn }) {
-  const [f, setF] = useState({
-    testDate: "",
-    testType: "",
-    geneName: "",
-    variant: "",
-    zygosity: "",
-    acmgClassification: "",
-    inheritancePattern: "",
-    associatedCondition: "",
-    lab: "",
-    orderingProvider: "",
-    clinicalInterpretation: "",
-    recommendations: "",
-    familyImplications: "",
-    notes: "",
-  });
+  const [f, setF] = useState(pickRandom(geneticPresets));
 
   const set = (k: keyof typeof f) => (v: string) =>
     setF((p) => ({ ...p, [k]: v }));

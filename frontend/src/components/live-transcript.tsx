@@ -17,8 +17,10 @@ import {
   startTranscription,
   stopTranscription,
   isTranscribing,
+  getActiveStream,
   type TranscriptEvent,
 } from "@/lib/assemblyai";
+import { AudioWaveform } from "@/components/audio-waveform";
 
 interface LiveTranscriptProps {
   onTranscriptComplete?: (entries: TranscriptEvent[]) => void;
@@ -29,6 +31,7 @@ export function LiveTranscript({ onTranscriptComplete }: LiveTranscriptProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [manualText, setManualText] = useState("");
   const [manualSpeaker, setManualSpeaker] = useState<string>("Doctor");
+  const [audioStream, setAudioStream] = useState<MediaStream | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -41,6 +44,7 @@ export function LiveTranscript({ onTranscriptComplete }: LiveTranscriptProps) {
     if (isRecording) {
       stopTranscription();
       setIsRecording(false);
+      setAudioStream(null);
       onTranscriptComplete?.(entries.filter((e) => e.isFinal));
     } else {
       setIsRecording(true);
@@ -49,6 +53,7 @@ export function LiveTranscript({ onTranscriptComplete }: LiveTranscriptProps) {
           setEntries((prev) => [...prev, event]);
         }
       });
+      setAudioStream(getActiveStream());
     }
   };
 
@@ -92,6 +97,25 @@ export function LiveTranscript({ onTranscriptComplete }: LiveTranscriptProps) {
         </div>
       </CardHeader>
       <CardContent>
+        <div className="mb-4 rounded-lg bg-muted/30 border border-border/50 p-3">
+          <AudioWaveform
+            stream={audioStream}
+            isActive={isRecording}
+            barCount={48}
+            className="h-14"
+          />
+          {isRecording && (
+            <div className="flex items-center justify-center gap-2 mt-2">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Recording &amp; transcribing...
+              </span>
+            </div>
+          )}
+        </div>
         <ScrollArea className="h-64" ref={scrollRef}>
           <div className="space-y-3 pr-4">
             {entries.length === 0 && (

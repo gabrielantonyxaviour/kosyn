@@ -1,0 +1,133 @@
+{
+  "generatedAt": "2026-03-09T00:00:00.000Z",
+  "repo": "kosyn-ai",
+  "mode": "code-reality-only",
+  "notes": [
+    "This audit maps only implemented code surfaces.",
+    "Aspirational PRODUCT/plan-only items are excluded from deterministic test modules."
+  ],
+  "frontend": {
+    "appPath": "frontend/src/app",
+    "pages": [
+      "/",
+      "/architecture",
+      "/data",
+      "/doctors/dashboard",
+      "/doctors/onboarding",
+      "/doctors/consultation/[id]",
+      "/patients/dashboard",
+      "/patients/onboarding",
+      "/patients/profile",
+      "/patients/consultations",
+      "/patients/consultation/[id]",
+      "/patients/deposit",
+      "/patients/records",
+      "/patients/records/new",
+      "/patients/records/share",
+      "/pitch"
+    ],
+    "apiRoutes": [
+      "/api/ai/select-records",
+      "/api/ai/chat",
+      "/api/ai-chat",
+      "/api/ai-session",
+      "/api/assemblyai/token",
+      "/api/cre/[workflow]",
+      "/api/data/[endpoint]",
+      "/api/deepgram/token",
+      "/api/demo",
+      "/api/ipfs/fetch",
+      "/api/ipfs/upload",
+      "/api/nillion/test",
+      "/api/records/encrypt-save",
+      "/api/speechmatics/jwt",
+      "/api/stripe/checkout",
+      "/api/stripe/deposit",
+      "/api/stripe/webhook"
+    ]
+  },
+  "workflows": {
+    "packagePath": "workflows",
+    "simulateOnly": true,
+    "entries": [
+      "consultation-processing",
+      "data-aggregation",
+      "data-marketplace",
+      "patient-ai-attest",
+      "payment-mint",
+      "provider-decryption",
+      "provider-registration",
+      "record-upload"
+    ]
+  },
+  "contracts": {
+    "packagePath": "contracts",
+    "src": [
+      "DataMarketplace.sol",
+      "HIPAAComplianceRegistry.sol",
+      "HealthRecordRegistry.sol",
+      "KosynUSD.sol",
+      "PatientConsent.sol",
+      "PatientRegistry.sol",
+      "ProviderRegistry.sol",
+      "ace/AuditPolicy.sol",
+      "ace/ConsentExpiryPolicy.sol",
+      "ace/KosynExtractor.sol",
+      "ace/MinimumNecessaryPolicy.sol",
+      "ace/PolicyEngine.sol",
+      "ace/ProviderAllowlistPolicy.sol"
+    ],
+    "tests": ["test/HealthRecordRegistry.t.sol"]
+  },
+  "testModules": [
+    {
+      "key": "frontend-core",
+      "priority": "smoke",
+      "pages": ["/", "/patients/dashboard", "/doctors/dashboard"],
+      "apiRoutes": ["/api/data/[endpoint]", "/api/ai/chat"]
+    },
+    {
+      "key": "patients-records",
+      "priority": "regression",
+      "pages": [
+        "/patients/records",
+        "/patients/records/new",
+        "/patients/records/share"
+      ],
+      "apiRoutes": [
+        "/api/records/encrypt-save",
+        "/api/ipfs/upload",
+        "/api/ipfs/fetch"
+      ]
+    },
+    {
+      "key": "payments-and-webhooks",
+      "priority": "regression",
+      "pages": ["/patients/deposit"],
+      "apiRoutes": [
+        "/api/stripe/checkout",
+        "/api/stripe/deposit",
+        "/api/stripe/webhook"
+      ]
+    },
+    {
+      "key": "cre-simulate",
+      "priority": "deep",
+      "workflowEntries": [
+        "record-upload",
+        "consultation-processing",
+        "data-aggregation",
+        "payment-mint"
+      ]
+    },
+    {
+      "key": "contracts-core",
+      "priority": "regression",
+      "contractTests": ["test/HealthRecordRegistry.t.sol"]
+    }
+  ],
+  "excludedAsAspirational": [
+    "docs/PRODUCT.md (non-binding for deterministic module inventory)",
+    "docs/plan/modules/*.json where module has no matching page/route/workflow/contract surface"
+  ]
+}

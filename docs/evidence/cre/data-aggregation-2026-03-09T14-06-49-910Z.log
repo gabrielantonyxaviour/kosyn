@@ -1,0 +1,32 @@
+workflow=data-aggregation
+command=cre workflow simulate data-aggregation --http-payload '<json>'
+status=0
+
+stdout:
+✓ Workflow compiled
+2026-03-09T19:37:21Z [SIMULATION] Simulator Initialized
+
+2026-03-09T19:37:21Z [SIMULATION] Running trigger trigger=http-trigger@1.0.0-alpha
+2026-03-09T19:37:25Z [USER LOG] data-aggregation: endpoint=demographics queryId=1
+2026-03-09T19:37:25Z [USER LOG] Found 0 active contributors
+2026-03-09T19:37:25Z [USER LOG] Aggregating 0 decrypted records
+2026-03-09T19:37:25Z [USER LOG] Result: {"total_patients":0,"record_type_distribution":{},"template_type_distribution":{},"last_updated":"2026-03-09T14:07:25.847Z","privacy":"k-anonymity k>=3, differential privacy ε=1.0"}
+
+✓ Workflow Simulation Result:
+{}
+
+2026-03-09T19:37:25Z [SIMULATION] Execution finished signal received
+2026-03-09T19:37:25Z [SIMULATION] Skipping WorkflowEngineV2
+
+╭──────────────────────────────────────────────────────╮
+│ Simulation complete! Ready to deploy your workflow?  │
+│                                                      │
+│ Run cre account access to request deployment access. │
+╰──────────────────────────────────────────────────────╯
+
+
+stderr:
+Initializing...
+Loading settings...
+Checking RPC connectivity...
+Compiling workflow...

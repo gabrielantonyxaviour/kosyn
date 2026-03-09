@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           error:
-            "Deposits are temporarily unavailable. Payment processor is offline.",
+            "The CRE service is currently offline. Please reach out to gabrielantony56@gmail.com to have it turned back on.",
           code: "CRE_OFFLINE",
         },
         { status: 503 },

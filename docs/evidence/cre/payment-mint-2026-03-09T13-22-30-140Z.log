@@ -1,0 +1,31 @@
+workflow=payment-mint
+command=cre workflow simulate payment-mint --http-payload '<json>'
+status=0
+
+stdout:
+✓ Workflow compiled
+2026-03-09T18:52:32Z [SIMULATION] Simulator Initialized
+
+2026-03-09T18:52:32Z [SIMULATION] Running trigger trigger=http-trigger@1.0.0-alpha
+2026-03-09T18:52:32Z [USER LOG] Processing payment: undefined, amount: 1000000, recipient: undefined
+2026-03-09T18:52:33Z [USER LOG] Stripe API returned 404
+2026-03-09T18:52:33Z [USER LOG] Payment verification failed. Aborting mint.
+
+✓ Workflow Simulation Result:
+{}
+
+2026-03-09T18:52:33Z [SIMULATION] Execution finished signal received
+2026-03-09T18:52:33Z [SIMULATION] Skipping WorkflowEngineV2
+
+╭──────────────────────────────────────────────────────╮
+│ Simulation complete! Ready to deploy your workflow?  │
+│                                                      │
+│ Run cre account access to request deployment access. │
+╰──────────────────────────────────────────────────────╯
+
+
+stderr:
+Initializing...
+Loading settings...
+Checking RPC connectivity...
+Compiling workflow...

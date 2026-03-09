@@ -1,0 +1,32 @@
+workflow=record-upload
+command=cre workflow simulate record-upload --http-payload '<json>'
+status=0
+
+stdout:
+✓ Workflow compiled
+2026-03-09T18:51:51Z [SIMULATION] Simulator Initialized
+
+2026-03-09T18:51:51Z [SIMULATION] Running trigger trigger=http-trigger@1.0.0-alpha
+2026-03-09T18:51:52Z [USER LOG] Processing record upload for patient: 0x000000000000000000000000000000000000bEEF, type: 1
+2026-03-09T18:51:54Z [USER LOG] Uploaded to IPFS: QmbgdLLvPZhV8c4m6iD9qYXHqYbguQmMZy2NoQbtgFUDxY
+2026-03-09T18:51:55Z [USER LOG] Record uploaded on-chain. TX: unknown
+
+✓ Workflow Simulation Result:
+{}
+
+2026-03-09T18:51:55Z [SIMULATION] Execution finished signal received
+2026-03-09T18:51:55Z [SIMULATION] Skipping WorkflowEngineV2
+
+╭──────────────────────────────────────────────────────╮
+│ Simulation complete! Ready to deploy your workflow?  │
+│                                                      │
+│ Run cre account access to request deployment access. │
+╰──────────────────────────────────────────────────────╯
+
+
+stderr:
+Initializing...
+Loading settings...
+Checking RPC connectivity...
+Compiling workflow...
+time=2026-03-09T18:51:49.156+05:30 level=INFO msg="context deadline exceeded"
